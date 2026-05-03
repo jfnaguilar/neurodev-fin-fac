@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+RUN apk add --no-cache openssl
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --legacy-peer-deps --omit=dev
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+COPY prisma/seed.ts ./prisma/seed.ts
+# Install ts-node for seed
+RUN npm install -g ts-node typescript
+
+CMD ["sh", "-c", "npx prisma migrate deploy && npx ts-node --project tsconfig.json prisma/seed.ts"]

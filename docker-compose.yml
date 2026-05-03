@@ -1,0 +1,73 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: neurodev_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: neurodev_fin
+      POSTGRES_USER: neurodev
+      POSTGRES_PASSWORD: neurodev2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neurodev -d neurodev_fin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (BullMQ jobs)
+  redis:
+    image: redis:7-alpine
+    container_name: neurodev_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neurodev_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://neurodev:neurodev2026@postgres:5432/neurodev_fin?schema=public"
+      NEXTAUTH_SECRET: "neurodev-fin-secret-key-2026-production-mode"
+      NEXTAUTH_URL: "http://localhost:3000"
+      REDIS_URL: "redis://redis:6379"
+      ENCRYPTION_KEY: "neurodev2026financeiro32charskey!"
+      NODE_ENV: "production"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Prisma migrations + seed (runs once then exits)
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: neurodev_migrate
+    environment:
+      DATABASE_URL: "postgresql://neurodev:neurodev2026@postgres:5432/neurodev_fin?schema=public"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres_data:
+  redis_data:

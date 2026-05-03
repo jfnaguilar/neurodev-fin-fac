@@ -1,0 +1,768 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── GRUPOS ECONÔMICOS E TENANTS ────────────────────────────────────────────
+
+model EconomicGroup {
+  id        String   @id @default(cuid())
+  name      String
+  document  String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenants Tenant[]
+
+  @@map("economic_groups")
+}
+
+model Tenant {
+  id              String   @id @default(cuid())
+  economicGroupId String   @map("economic_group_id")
+  cnpj            String   @unique
+  companyName     String   @map("company_name")
+  tradeName       String?  @map("trade_name")
+  schemaName      String   @unique @map("schema_name")
+  isActive        Boolean  @default(true) @map("is_active")
+  logoUrl         String?  @map("logo_url")
+  settings        Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  economicGroup EconomicGroup @relation(fields: [economicGroupId], references: [id])
+  users         UserTenantRole[]
+  sessions      Session[]
+
+  @@map("tenants")
+}
+
+// ─── USUÁRIOS E AUTENTICAÇÃO ─────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  passwordHash  String?   @map("password_hash")
+  image         String?
+  mfaSecret     String?   @map("mfa_secret")
+  mfaEnabled    Boolean   @default(false) @map("mfa_enabled")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastLoginAt   DateTime? @map("last_login_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  tenantRoles     UserTenantRole[]
+  sessions        Session[]
+  approvalHistory ApprovalHistory[]
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model UserTenantRole {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  tenantId    String   @map("tenant_id")
+  role        String   @default("USER")
+  permissions Json     @default("{}")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@map("user_tenant_roles")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  tenantId     String?  @map("tenant_id")
+  expires      DateTime
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+
+  @@map("sessions")
+}
+
+// ─── PLANO DE CONTAS ─────────────────────────────────────────────────────────
+
+model ChartOfAccount {
+  id            String   @id @default(cuid())
+  tenantId      String   @map("tenant_id")
+  code          String
+  name          String
+  type          AccountType
+  nature        AccountNature
+  parentId      String?  @map("parent_id")
+  level         Int      @default(1)
+  isAnalytical  Boolean  @default(true) @map("is_analytical")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  parent   ChartOfAccount?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children ChartOfAccount[] @relation("AccountHierarchy")
+
+  @@unique([tenantId, code])
+  @@map("chart_of_accounts")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum AccountNature {
+  DEBIT
+  CREDIT
+}
+
+// ─── CENTROS DE CUSTO ────────────────────────────────────────────────────────
+
+model CostCenter {
+  id          String          @id @default(cuid())
+  tenantId    String          @map("tenant_id")
+  code        String
+  name        String
+  type        CostCenterType
+  parentId    String?         @map("parent_id")
+  isActive    Boolean         @default(true) @map("is_active")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  parent   CostCenter?  @relation("CostCenterHierarchy", fields: [parentId], references: [id])
+  children CostCenter[] @relation("CostCenterHierarchy")
+  titleRatings TitleRating[]
+
+  @@unique([tenantId, code])
+  @@map("cost_centers")
+}
+
+enum CostCenterType {
+  STUDENT
+  CLASS
+  TEACHER
+  GENERAL
+}
+
+// ─── FORNECEDORES E CLIENTES ─────────────────────────────────────────────────
+
+model Supplier {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  name         String
+  tradeName    String?  @map("trade_name")
+  document     String
+  documentType String   @default("CNPJ") @map("document_type")
+  group        String?
+  subgroup     String?
+  email        String?
+  phone        String?
+  address      Json?
+  bankAccounts Json     @default("[]") @map("bank_accounts")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  paymentTitles PaymentTitle[]
+  adfEntries    AdfEntry[]
+
+  @@unique([tenantId, document])
+  @@map("suppliers")
+}
+
+model Customer {
+  id           String       @id @default(cuid())
+  tenantId     String       @map("tenant_id")
+  name         String
+  document     String?
+  documentType String?      @map("document_type")
+  type         CustomerType @default(STUDENT)
+  enrollmentId String?      @map("enrollment_id")
+  email        String?
+  phone        String?
+  address      Json?
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  receivableTitles ReceivableTitle[]
+
+  @@unique([tenantId, enrollmentId])
+  @@map("customers")
+}
+
+enum CustomerType {
+  STUDENT
+  RESPONSIBLE
+  OTHER
+}
+
+// ─── CONTRATOS ────────────────────────────────────────────────────────────────
+
+model Contract {
+  id          String       @id @default(cuid())
+  tenantId    String       @map("tenant_id")
+  type        ContractType
+  number      String
+  startDate   DateTime     @map("start_date")
+  endDate     DateTime?    @map("end_date")
+  partyId     String       @map("party_id")
+  partyType   String       @map("party_type")
+  value       Decimal      @db.Decimal(15, 2)
+  description String?
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  paymentTitles    PaymentTitle[]
+  receivableTitles ReceivableTitle[]
+
+  @@unique([tenantId, number])
+  @@map("contracts")
+}
+
+enum ContractType {
+  ENROLLMENT
+  REENROLLMENT
+  SERVICE
+  LEASE
+  OTHER
+}
+
+// ─── CONVÊNIOS BANCÁRIOS ─────────────────────────────────────────────────────
+
+model BankCovenant {
+  id             String   @id @default(cuid())
+  tenantId       String   @map("tenant_id")
+  bankCode       String   @map("bank_code")
+  bankName       String   @map("bank_name")
+  agency         String
+  account        String
+  covenantCode   String   @map("covenant_code")
+  wallet         String?
+  layout         String
+  type           CovenantType
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  remittances Remittance[]
+
+  @@map("bank_covenants")
+}
+
+enum CovenantType {
+  PAYMENT
+  COLLECTION
+}
+
+// ─── TURMAS E PROFESSORES ─────────────────────────────────────────────────────
+
+model ClassGroup {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  code        String
+  name        String
+  course      String?
+  period      String?
+  teacherId   String?  @map("teacher_id")
+  studentCount Int     @default(0) @map("student_count")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  teacher Teacher? @relation(fields: [teacherId], references: [id])
+
+  @@unique([tenantId, code])
+  @@map("class_groups")
+}
+
+model Teacher {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  name       String
+  document   String?
+  email      String?
+  phone      String?
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  classes ClassGroup[]
+
+  @@map("teachers")
+}
+
+// ─── TÍTULOS A PAGAR ─────────────────────────────────────────────────────────
+
+model PaymentTitle {
+  id                  String              @id @default(cuid())
+  tenantId            String              @map("tenant_id")
+  supplierId          String              @map("supplier_id")
+  contractId          String?             @map("contract_id")
+  documentType        DocumentOriginType  @map("document_type")
+  documentNumber      String?             @map("document_number")
+  emissionDate        DateTime            @map("emission_date")
+  dueDate             DateTime            @map("due_date")
+  originalValue       Decimal             @db.Decimal(15, 2) @map("original_value")
+  currentBalance      Decimal             @db.Decimal(15, 2) @map("current_balance")
+  discountAmount      Decimal             @default(0) @db.Decimal(15, 2) @map("discount_amount")
+  interestAmount      Decimal             @default(0) @db.Decimal(15, 2) @map("interest_amount")
+  situation           TitleSituation      @default(PENDING_APPROVAL)
+  paymentMethod       PaymentMethod?      @map("payment_method")
+  paymentUnit         String?             @map("payment_unit")
+  observation         String?
+  accountCode         String?             @map("account_code")
+  costCenterId        String?             @map("cost_center_id")
+  ctbNominalDone      Boolean             @default(false) @map("ctb_nominal_done")
+  ctbNominalAt        DateTime?           @map("ctb_nominal_at")
+  isModified          Boolean             @default(false) @map("is_modified")
+  lastModifiedBy      String?             @map("last_modified_by")
+  lastModifiedAt      DateTime?           @map("last_modified_at")
+  approvalLevel       Int                 @default(0) @map("approval_level")
+  currentApprovalLevel Int               @default(0) @map("current_approval_level")
+  canceledAt          DateTime?           @map("canceled_at")
+  canceledBy          String?             @map("canceled_by")
+  cancelReason        String?             @map("cancel_reason")
+  paidAt              DateTime?           @map("paid_at")
+  paidBy              String?             @map("paid_by")
+  createdBy           String              @map("created_by")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  supplier     Supplier          @relation(fields: [supplierId], references: [id])
+  contract     Contract?         @relation(fields: [contractId], references: [id])
+  installments TitleInstallment[]
+  attachments  TitleAttachment[]
+  ratings      TitleRating[]
+  approvals    ApprovalHistory[]
+  agreements   Agreement[]       @relation("OriginalTitle")
+  newAgreements Agreement[]      @relation("NewTitle")
+  remittanceItems RemittanceItem[]
+
+  @@map("payment_titles")
+}
+
+// ─── TÍTULOS A RECEBER ────────────────────────────────────────────────────────
+
+model ReceivableTitle {
+  id               String             @id @default(cuid())
+  tenantId         String             @map("tenant_id")
+  customerId       String             @map("customer_id")
+  contractId       String?            @map("contract_id")
+  documentType     DocumentOriginType @map("document_type")
+  documentNumber   String?            @map("document_number")
+  emissionDate     DateTime           @map("emission_date")
+  dueDate          DateTime           @map("due_date")
+  originalValue    Decimal            @db.Decimal(15, 2) @map("original_value")
+  currentBalance   Decimal            @db.Decimal(15, 2) @map("current_balance")
+  discountAmount   Decimal            @default(0) @db.Decimal(15, 2) @map("discount_amount")
+  interestAmount   Decimal            @default(0) @db.Decimal(15, 2) @map("interest_amount")
+  fineAmount       Decimal            @default(0) @db.Decimal(15, 2) @map("fine_amount")
+  situation        TitleSituation     @default(RELEASED)
+  paymentMethod    PaymentMethod?     @map("payment_method")
+  observation      String?
+  accountCode      String?            @map("account_code")
+  costCenterId     String?            @map("cost_center_id")
+  isModified       Boolean            @default(false) @map("is_modified")
+  lastModifiedBy   String?            @map("last_modified_by")
+  lastModifiedAt   DateTime?          @map("last_modified_at")
+  canceledAt       DateTime?          @map("canceled_at")
+  canceledBy       String?            @map("canceled_by")
+  receivedAt       DateTime?          @map("received_at")
+  receivedBy       String?            @map("received_by")
+  createdBy        String             @map("created_by")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  customer         Customer           @relation(fields: [customerId], references: [id])
+  contract         Contract?          @relation(fields: [contractId], references: [id])
+  installments     TitleInstallment[]
+  attachments      TitleAttachment[]
+  ratings          TitleRating[]
+  remittanceItems  RemittanceItem[]
+
+  @@map("receivable_titles")
+}
+
+enum DocumentOriginType {
+  CONTRACT
+  ENROLLMENT
+  REENROLLMENT
+  INVOICE_IN
+  RECEIPT
+  OTHER
+}
+
+enum TitleSituation {
+  PENDING_APPROVAL
+  RELEASED
+  PAID
+  RECEIVED
+  CANCELED
+  AGREED
+  BANK
+  OVERDUE
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  TED
+  DOC
+  CHECK
+  CARD
+  ADF_COMPENSATION
+  BANK_SLIP
+}
+
+// ─── PARCELAS ────────────────────────────────────────────────────────────────
+
+model TitleInstallment {
+  id                 String   @id @default(cuid())
+  paymentTitleId     String?  @map("payment_title_id")
+  receivableTitleId  String?  @map("receivable_title_id")
+  number             Int
+  dueDate            DateTime @map("due_date")
+  value              Decimal  @db.Decimal(15, 2)
+  balance            Decimal  @db.Decimal(15, 2)
+  situation          TitleSituation @default(RELEASED)
+  paidAt             DateTime? @map("paid_at")
+  paidValue          Decimal?  @db.Decimal(15, 2) @map("paid_value")
+
+  paymentTitle    PaymentTitle?    @relation(fields: [paymentTitleId], references: [id])
+  receivableTitle ReceivableTitle? @relation(fields: [receivableTitleId], references: [id])
+
+  @@map("title_installments")
+}
+
+// ─── ANEXOS ────────────────────────────────────────────────────────────────
+
+model TitleAttachment {
+  id                 String         @id @default(cuid())
+  paymentTitleId     String?        @map("payment_title_id")
+  receivableTitleId  String?        @map("receivable_title_id")
+  fileType           AttachmentType @map("file_type")
+  fileName           String         @map("file_name")
+  filePath           String         @map("file_path")
+  fileSize           Int            @map("file_size")
+  mimeType           String         @map("mime_type")
+  extractedData      Json?          @map("extracted_data")
+  ocrConfidence      Float?         @map("ocr_confidence")
+  uploadedBy         String         @map("uploaded_by")
+  uploadedAt         DateTime       @default(now()) @map("uploaded_at")
+
+  paymentTitle    PaymentTitle?    @relation(fields: [paymentTitleId], references: [id])
+  receivableTitle ReceivableTitle? @relation(fields: [receivableTitleId], references: [id])
+
+  @@map("title_attachments")
+}
+
+enum AttachmentType {
+  DANFE
+  XML
+  PDF
+  OTHER
+}
+
+// ─── RATEIO ────────────────────────────────────────────────────────────────
+
+model TitleRating {
+  id                 String          @id @default(cuid())
+  paymentTitleId     String?         @map("payment_title_id")
+  receivableTitleId  String?         @map("receivable_title_id")
+  ratingType         RatingType      @map("rating_type")
+  referenceId        String          @map("reference_id")
+  referenceName      String          @map("reference_name")
+  costCenterId       String?         @map("cost_center_id")
+  value              Decimal         @db.Decimal(15, 2)
+  percentage         Decimal         @db.Decimal(5, 2)
+  createdAt          DateTime        @default(now()) @map("created_at")
+
+  paymentTitle    PaymentTitle?    @relation(fields: [paymentTitleId], references: [id])
+  receivableTitle ReceivableTitle? @relation(fields: [receivableTitleId], references: [id])
+  costCenter      CostCenter?      @relation(fields: [costCenterId], references: [id])
+
+  @@map("title_ratings")
+}
+
+enum RatingType {
+  STUDENT
+  CLASS
+  TEACHER
+  GENERAL
+}
+
+// ─── ACORDOS ────────────────────────────────────────────────────────────────
+
+model Agreement {
+  id              String        @id @default(cuid())
+  tenantId        String        @map("tenant_id")
+  originalTitleId String        @map("original_title_id")
+  newTitleId      String?       @map("new_title_id")
+  type            AgreementType
+  reason          String
+  notes           String?
+  newDueDate      DateTime?     @map("new_due_date")
+  newAmount       Decimal?      @db.Decimal(15, 2) @map("new_amount")
+  approvedBy      String?       @map("approved_by")
+  approvedAt      DateTime?     @map("approved_at")
+  status          String        @default("PENDING")
+  createdBy       String        @map("created_by")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  originalTitle PaymentTitle  @relation("OriginalTitle", fields: [originalTitleId], references: [id])
+  newTitle      PaymentTitle? @relation("NewTitle", fields: [newTitleId], references: [id])
+
+  @@map("agreements")
+}
+
+enum AgreementType {
+  REPAIR
+  RENEGOTIATION
+  DISCOUNT
+  SETTLEMENT
+}
+
+// ─── ADIANTAMENTO A FORNECEDOR ───────────────────────────────────────────────
+
+model AdfEntry {
+  id            String      @id @default(cuid())
+  tenantId      String      @map("tenant_id")
+  supplierId    String      @map("supplier_id")
+  documentOrigin String     @map("document_origin")
+  group         String?
+  subgroup      String?
+  value         Decimal     @db.Decimal(15, 2)
+  type          AdfType
+  relatedAdfId  String?     @map("related_adf_id")
+  situation     AdfSituation @default(PENDING)
+  settledAt     DateTime?   @map("settled_at")
+  settledBy     String?     @map("settled_by")
+  settlementType AdfSettlementType? @map("settlement_type")
+  observation   String?
+  createdBy     String      @map("created_by")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  supplier   Supplier  @relation(fields: [supplierId], references: [id])
+  relatedAdf AdfEntry? @relation("AdfRelation", fields: [relatedAdfId], references: [id])
+  relatedAdfEntries AdfEntry[] @relation("AdfRelation")
+
+  @@map("adf_entries")
+}
+
+enum AdfType {
+  OUTFLOW
+  INFLOW
+}
+
+enum AdfSituation {
+  PENDING
+  PAID
+  SETTLED
+  CANCELED
+}
+
+enum AdfSettlementType {
+  ACCOUNTING
+  RECEIPT
+  SUPPLIER_TRANSFER
+  RECEIVABLE_GENERATION
+}
+
+// ─── REMESSAS BANCÁRIAS ───────────────────────────────────────────────────────
+
+model Remittance {
+  id              String           @id @default(cuid())
+  tenantId        String           @map("tenant_id")
+  type            RemittanceType
+  bankCovenantId  String           @map("bank_covenant_id")
+  sequenceNumber  Int              @map("sequence_number")
+  layout          String
+  status          RemittanceStatus @default(GENERATED)
+  generatedAt     DateTime         @default(now()) @map("generated_at")
+  sentAt          DateTime?        @map("sent_at")
+  filePath        String?          @map("file_path")
+  fileName        String?          @map("file_name")
+  totalAmount     Decimal          @db.Decimal(15, 2) @map("total_amount")
+  totalItems      Int              @map("total_items")
+  generatedBy     String           @map("generated_by")
+
+  bankCovenant BankCovenant   @relation(fields: [bankCovenantId], references: [id])
+  items        RemittanceItem[]
+  returns      BankReturn[]
+
+  @@map("remittances")
+}
+
+model RemittanceItem {
+  id                 String   @id @default(cuid())
+  remittanceId       String   @map("remittance_id")
+  paymentTitleId     String?  @map("payment_title_id")
+  receivableTitleId  String?  @map("receivable_title_id")
+  amount             Decimal  @db.Decimal(15, 2)
+  status             String   @default("PENDING")
+
+  remittance      Remittance       @relation(fields: [remittanceId], references: [id])
+  paymentTitle    PaymentTitle?    @relation(fields: [paymentTitleId], references: [id])
+  receivableTitle ReceivableTitle? @relation(fields: [receivableTitleId], references: [id])
+
+  @@map("remittance_items")
+}
+
+model BankReturn {
+  id           String   @id @default(cuid())
+  remittanceId String?  @map("remittance_id")
+  tenantId     String   @map("tenant_id")
+  processedAt  DateTime @default(now()) @map("processed_at")
+  filePath     String?  @map("file_path")
+  fileName     String?  @map("file_name")
+  log          Json     @default("{}")
+  processedBy  String   @map("processed_by")
+
+  remittance Remittance? @relation(fields: [remittanceId], references: [id])
+
+  @@map("bank_returns")
+}
+
+enum RemittanceType {
+  PAYMENT
+  COLLECTION
+}
+
+enum RemittanceStatus {
+  GENERATED
+  SENT
+  PROCESSED
+  RETURNED
+  ERROR
+}
+
+// ─── ALÇADAS E APROVAÇÕES ─────────────────────────────────────────────────────
+
+model ApprovalWorkflow {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  minValue    Decimal  @db.Decimal(15, 2) @map("min_value")
+  maxValue    Decimal? @db.Decimal(15, 2) @map("max_value")
+  levels      Json
+  escalationHours Int  @default(24) @map("escalation_hours")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("approval_workflows")
+}
+
+model ApprovalHistory {
+  id            String          @id @default(cuid())
+  tenantId      String          @map("tenant_id")
+  paymentTitleId String         @map("payment_title_id")
+  level         Int
+  approverId    String          @map("approver_id")
+  status        ApprovalStatus
+  comment       String?
+  delegatedTo   String?         @map("delegated_to")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  approver     User         @relation(fields: [approverId], references: [id])
+  paymentTitle PaymentTitle @relation(fields: [paymentTitleId], references: [id])
+
+  @@map("approval_history")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DELEGATED
+}
+
+// ─── AUDITORIA ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  tableName  String   @map("table_name")
+  recordId   String   @map("record_id")
+  action     AuditAction
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  changedBy  String   @map("changed_by")
+  changedAt  DateTime @default(now()) @map("changed_at")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+
+  user User @relation(fields: [changedBy], references: [id])
+
+  @@map("audit_log")
+}
+
+enum AuditAction {
+  INSERT
+  UPDATE
+  DELETE
+  APPROVAL
+  CANCEL
+  PAYMENT
+  REVERSAL
+}
+
+// ─── LGPD ─────────────────────────────────────────────────────────────────────
+
+model LgpdConsent {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  purpose   String
+  granted   Boolean
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("lgpd_consents")
+}
+
+model LgpdRequest {
+  id        String            @id @default(cuid())
+  tenantId  String            @map("tenant_id")
+  userId    String            @map("user_id")
+  type      LgpdRequestType
+  status    LgpdRequestStatus @default(PENDING)
+  response  String?
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  @@map("lgpd_requests")
+}
+
+enum LgpdRequestType {
+  ACCESS
+  DELETION
+  PORTABILITY
+  CORRECTION
+}
+
+enum LgpdRequestStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  REJECTED
+}

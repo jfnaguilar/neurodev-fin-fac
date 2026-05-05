@@ -766,3 +766,63 @@ enum LgpdRequestStatus {
   COMPLETED
   REJECTED
 }
+
+// ─── OPEN FINANCE (PLUGGY) ────────────────────────────────────────────────────
+
+model PluggyConnection {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  itemId      String    @unique @map("item_id")
+  connectorId Int       @map("connector_id")
+  bankName    String    @map("bank_name")
+  status      String    @default("UPDATED")
+  error       String?
+  lastSync    DateTime? @map("last_sync")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  accounts PluggyAccount[]
+
+  @@map("pluggy_connections")
+}
+
+model PluggyAccount {
+  id           String    @id @default(cuid())
+  connectionId String    @map("connection_id")
+  tenantId     String    @map("tenant_id")
+  pluggyId     String    @unique @map("pluggy_id")
+  name         String
+  number       String?
+  bankData     Json      @default("{}") @map("bank_data")
+  type         String
+  subtype      String?
+  currencyCode String    @default("BRL") @map("currency_code")
+  balance      Decimal   @db.Decimal(15, 2)
+  syncedAt     DateTime? @map("synced_at")
+
+  connection   PluggyConnection  @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  transactions PluggyTransaction[]
+
+  @@map("pluggy_accounts")
+}
+
+model PluggyTransaction {
+  id          String   @id @default(cuid())
+  accountId   String   @map("account_id")
+  tenantId    String   @map("tenant_id")
+  pluggyId    String   @unique @map("pluggy_id")
+  date        DateTime
+  description String
+  amount      Decimal  @db.Decimal(15, 2)
+  type        String
+  category    String?
+  bankData    Json?    @map("bank_data")
+  reconciled  Boolean  @default(false)
+  titleId     String?  @map("title_id")
+  titleType   String?  @map("title_type")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  account PluggyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("pluggy_transactions")
+}

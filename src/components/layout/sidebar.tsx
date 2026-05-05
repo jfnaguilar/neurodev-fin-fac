@@ -43,6 +43,7 @@ import {
   BarChart2,
   RefreshCw,
   Receipt,
+  Wifi,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -196,6 +197,7 @@ const navigation: NavItem[] = [
           { label: "CNAB 240 (Retorno Cobrança)", href: "/bancario/retorno/cnab240-cobranca", icon: Download },
         ],
       },
+      { label: "Open Finance (Pluggy)", href: "/bancario/open-finance", icon: Wifi },
       { label: "Configuração de Convênios", href: "/bancario/convenios", icon: Settings },
       { label: "Log de Integrações", href: "/bancario/log", icon: ScrollText },
     ],

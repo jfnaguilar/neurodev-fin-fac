@@ -355,6 +355,7 @@ model PaymentTitle {
   agreements   Agreement[]       @relation("OriginalTitle")
   newAgreements Agreement[]      @relation("NewTitle")
   remittanceItems RemittanceItem[]
+  invoiceEmissions InvoiceEmission[]
 
   @@map("payment_titles")
 }
@@ -397,6 +398,8 @@ model ReceivableTitle {
   attachments      TitleAttachment[]
   ratings          TitleRating[]
   remittanceItems  RemittanceItem[]
+  boletoEmissions  BoletoEmission[]
+  invoiceEmissions InvoiceEmission[]
 
   @@map("receivable_titles")
 }
@@ -765,6 +768,95 @@ enum LgpdRequestStatus {
   PROCESSING
   COMPLETED
   REJECTED
+}
+
+// ─── INTEGRAÇÕES DE PAGAMENTO E FATURAMENTO ───────────────────────────────────
+
+model IntegrationConfig {
+  id         String              @id @default(cuid())
+  tenantId   String              @map("tenant_id")
+  provider   IntegrationProvider
+  apiKeyEnc  String?             @map("api_key_enc")
+  settings   Json                @default("{}")
+  isActive   Boolean             @default(false) @map("is_active")
+  isSandbox  Boolean             @default(true) @map("is_sandbox")
+  testedAt   DateTime?           @map("tested_at")
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+
+  @@unique([tenantId, provider])
+  @@map("integration_configs")
+}
+
+enum IntegrationProvider {
+  STRIPE
+  ASAAS
+  FOCUSNFE
+}
+
+model BoletoEmission {
+  id                String       @id @default(cuid())
+  tenantId          String       @map("tenant_id")
+  receivableTitleId String?      @map("receivable_title_id")
+  provider          String
+  externalId        String       @map("external_id")
+  barCode           String?      @map("bar_code")
+  digitableLine     String?      @map("digitable_line")
+  pdfUrl            String?      @map("pdf_url")
+  dueDate           DateTime     @map("due_date")
+  amount            Decimal      @db.Decimal(15, 2)
+  status            BoletoStatus @default(PENDING)
+  paidAt            DateTime?    @map("paid_at")
+  canceledAt        DateTime?    @map("canceled_at")
+  webhookData       Json?        @map("webhook_data")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  receivableTitle ReceivableTitle? @relation(fields: [receivableTitleId], references: [id])
+
+  @@map("boleto_emissions")
+}
+
+enum BoletoStatus {
+  PENDING
+  PAID
+  CANCELLED
+  EXPIRED
+}
+
+model InvoiceEmission {
+  id                String        @id @default(cuid())
+  tenantId          String        @map("tenant_id")
+  receivableTitleId String?       @map("receivable_title_id")
+  paymentTitleId    String?       @map("payment_title_id")
+  provider          String
+  externalId        String?       @map("external_id")
+  ref               String?
+  protocol          String?
+  accessKey         String?       @map("access_key")
+  series            String?
+  number            String?
+  pdfUrl            String?       @map("pdf_url")
+  xmlUrl            String?       @map("xml_url")
+  status            InvoiceStatus @default(PENDING)
+  errorMessage      String?       @map("error_message")
+  issuedAt          DateTime?     @map("issued_at")
+  canceledAt        DateTime?     @map("canceled_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  receivableTitle ReceivableTitle? @relation(fields: [receivableTitleId], references: [id])
+  paymentTitle    PaymentTitle?    @relation(fields: [paymentTitleId], references: [id])
+
+  @@map("invoice_emissions")
+}
+
+enum InvoiceStatus {
+  PENDING
+  PROCESSING
+  ISSUED
+  CANCELLED
+  ERROR
 }
 
 // ─── OPEN FINANCE (PLUGGY) ────────────────────────────────────────────────────

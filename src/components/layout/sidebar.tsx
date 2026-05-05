@@ -44,6 +44,7 @@ import {
   RefreshCw,
   Receipt,
   Wifi,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -241,6 +242,7 @@ const navigation: NavItem[] = [
     children: [
       { label: "Usuários e Permissões", href: "/admin/usuarios", icon: Users },
       { label: "Alçadas de Aprovação", href: "/admin/alcadas", icon: ShieldCheck },
+      { label: "Integrações (Boleto/NF-e)", href: "/admin/integracoes", icon: Plug },
       { label: "Parâmetros do Sistema", href: "/admin/parametros", icon: Sliders },
       { label: "Log de Auditoria", href: "/admin/auditoria", icon: ScrollText },
       { label: "LGPD/Privacidade", href: "/admin/lgpd", icon: Lock },

@@ -60,7 +60,9 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Projetos\\\\NeuroDev_FIN\" -Recurse -Depth 3)",
       "Bash(Select-Object FullName, PSIsContainer)",
       "Bash(Format-Table -AutoSize)",
-      "Bash(mkdir -p \"c:/Projetos/NeuroDev_FIN/src/app/api/pluggy/connect-token\" && mkdir -p \"c:/Projetos/NeuroDev_FIN/src/app/api/pluggy/items/[id]\" && mkdir -p \"c:/Projetos/NeuroDev_FIN/src/app/api/pluggy/sync\")"
+      "Bash(mkdir -p \"c:/Projetos/NeuroDev_FIN/src/app/api/pluggy/connect-token\" && mkdir -p \"c:/Projetos/NeuroDev_FIN/src/app/api/pluggy/items/[id]\" && mkdir -p \"c:/Projetos/NeuroDev_FIN/src/app/api/pluggy/sync\")",
+      "Bash(mkdir -p \"c:/Projetos/NeuroDev_FIN/src/app/api/boleto/[id]\")",
+      "Bash(mkdir -p \"c:/Projetos/NeuroDev_FIN/src/app/api/nfe/[id]\")"
     ],
     "additionalDirectories": [
       "c:\\Projetos\\NeuroDev_FIN\\src\\app\\api\\pluggy\\items"

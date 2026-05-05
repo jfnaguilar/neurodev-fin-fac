@@ -8,7 +8,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
-    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
+    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs", "bullmq"],
+    instrumentationHook: true,
   },
   images: {
     remotePatterns: [

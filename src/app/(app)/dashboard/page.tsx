@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
-  TrendingDown, TrendingUp, DollarSign, AlertTriangle, ArrowUpRight, ArrowDownRight,
+  TrendingDown, TrendingUp, DollarSign, AlertTriangle, ArrowUpRight, ArrowDownRight, Landmark,
 } from "lucide-react";
 import {
   BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -10,6 +10,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
+import { useTenantStore } from "@/store/tenant";
 
 // Mai/26 é mês corrente — projeção começa em Jun/26
 const cashFlowData = [
@@ -106,6 +107,30 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function DashboardPage() {
+  const { currentTenant } = useTenantStore();
+  const [bankBalance, setBankBalance] = useState<number | null>(null);
+  const [bankAccountCount, setBankAccountCount] = useState(0);
+  const [lastBankSync, setLastBankSync] = useState<string | null>(null);
+
+  useEffect(() => {
+    const tenantId = currentTenant?.id ?? "dev-tenant";
+    fetch(`/api/dashboard?tenantId=${tenantId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.data?.bankBalance !== undefined && data.data.bankBalance !== null) {
+          setBankBalance(data.data.bankBalance);
+          setBankAccountCount(data.data.bankAccountCount ?? 0);
+          setLastBankSync(data.data.lastBankSync ?? null);
+        }
+      })
+      .catch(() => {});
+  }, [currentTenant?.id]);
+
+  const fmtSync = (iso: string | null) => {
+    if (!iso) return null;
+    return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -119,6 +144,33 @@ export default function DashboardPage() {
         <SummaryCard title="Pagamentos Previstos" value={168000} subtitle="Próximos 30 dias" icon={TrendingDown} trend="down" trendValue="+3,1%" color="red" />
         <SummaryCard title="Inadimplência" value={23500} subtitle="Títulos vencidos há +30 dias" icon={AlertTriangle} trend="down" trendValue="-2,8%" color="yellow" />
       </div>
+
+      {bankBalance !== null && (
+        <Card className="border-blue-900/40 bg-blue-950/10">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-900/40 shrink-0">
+                  <Landmark className="h-5 w-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Posição Bancária Real</p>
+                  <p className="text-2xl font-bold tabular-nums text-blue-400">{formatCurrency(bankBalance)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                <span>{bankAccountCount} conta(s) via Open Finance</span>
+                {lastBankSync && <span>Sync: {fmtSync(lastBankSync)}</span>}
+                <Badge variant="outline" className="text-blue-400 border-blue-800 text-xs gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400 inline-block" />
+                  Open Finance
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader>

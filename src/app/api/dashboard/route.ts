@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
       monthReceivables,
       overduePayables,
       overdueReceivables,
+      bankAccounts,
     ] = await Promise.all([
       // Saldo total a pagar (liberados)
       prisma.paymentTitle.aggregate({
@@ -68,10 +69,23 @@ export async function GET(request: NextRequest) {
         where: { tenantId, situation: "RELEASED", dueDate: { lt: now } },
         _sum: { currentBalance: true },
       }),
+      // Saldo bancário real (Open Finance)
+      prisma.pluggyAccount.findMany({
+        where: { tenantId, type: "BANK" },
+        select: { balance: true, name: true, syncedAt: true },
+      }).catch(() => []),
     ]);
 
     const totalRec = Number(totalReceivables._sum.currentBalance ?? 0);
     const totalPay = Number(totalPayables._sum.currentBalance ?? 0);
+
+    const bankBalanceTotal = bankAccounts.reduce((s, a) => s + Number(a.balance), 0);
+    const lastBankSync = bankAccounts.length
+      ? bankAccounts.reduce((latest, a) =>
+          a.syncedAt && (!latest || a.syncedAt > latest) ? a.syncedAt : latest,
+          null as Date | null
+        )
+      : null;
 
     const summary = {
       currentBalance: totalRec - totalPay,
@@ -82,6 +96,9 @@ export async function GET(request: NextRequest) {
       netPosition: totalRec - totalPay,
       overduePayables: Number(overduePayables._sum.currentBalance ?? 0),
       overdueReceivables: Number(overdueReceivables._sum.currentBalance ?? 0),
+      bankBalance: bankAccounts.length > 0 ? bankBalanceTotal : null,
+      bankAccountCount: bankAccounts.length,
+      lastBankSync,
     };
 
     return NextResponse.json({ data: summary });

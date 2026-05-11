@@ -10,11 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockTitulos = [
-  { id: "1", number: "PAG-2025-001", supplier: "Fornecedor ABC Ltda", dueDate: "2026-05-05", value: 45000, bank: "341 - Itaú" },
-  { id: "2", number: "PAG-2025-003", supplier: "Manutenção Predial", dueDate: "2026-05-10", value: 18000, bank: "001 - Banco do Brasil" },
-  { id: "3", number: "PAG-2025-004", supplier: "Software TI Sistemas", dueDate: "2026-05-15", value: 12000, bank: "341 - Itaú" },
-];
+const mockTitulos: { id: string; number: string; supplier: string; dueDate: string; value: number; bank: string }[] = [];
 
 export default function GeracaoRemessaPagarPage() {
   const [selected, setSelected] = useState<string[]>([]);

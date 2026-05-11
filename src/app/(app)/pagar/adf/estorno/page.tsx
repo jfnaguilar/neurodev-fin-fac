@@ -9,12 +9,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockAcertos = [
-  { id: "1", adfNumber: "ADF-2025-001", titleNumber: "PAG-2025-030", supplier: "Fornecedor ABC Ltda", date: "2026-04-20", value: 12000 },
-  { id: "2", adfNumber: "ADF-2025-002", titleNumber: "PAG-2025-031", supplier: "Tech Solutions S.A.", date: "2026-04-22", value: 3000 },
-];
-
-type Acerto = typeof mockAcertos[0];
+type Acerto = { id: string; adfNumber: string; titleNumber: string; supplier: string; date: string; value: number };
+const mockAcertos: Acerto[] = [];
 
 export default function EstornoAcertoADFPage() {
   const [acertos, setAcertos] = useState(mockAcertos);

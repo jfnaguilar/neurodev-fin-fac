@@ -8,12 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-const mockRemessas = [
-  { id: "1", filename: "REMESSA_PAG_20260505.txt", bank: "341 - Itaú", date: "2026-05-05", titles: 3, value: 75000, status: "SENT" },
-  { id: "2", filename: "REMESSA_PAG_20260428.txt", bank: "001 - Banco do Brasil", date: "2026-04-28", titles: 2, value: 63000, status: "RETURNED" },
-  { id: "3", filename: "REMESSA_PAG_20260415.txt", bank: "341 - Itaú", date: "2026-04-15", titles: 5, value: 112000, status: "RETURNED" },
-  { id: "4", filename: "REMESSA_PAG_20260401.txt", bank: "033 - Santander", date: "2026-04-01", titles: 1, value: 45000, status: "PENDING" },
-];
+const mockRemessas: { id: string; filename: string; bank: string; date: string; titles: number; value: number; status: string }[] = [];
 
 const statusLabels: Record<string, string> = { SENT: "Enviada", RETURNED: "Retorno Processado", PENDING: "Aguardando Retorno" };
 const statusColors: Record<string, string> = { SENT: "bg-blue-50 text-blue-700", RETURNED: "bg-green-50 text-green-700", PENDING: "bg-yellow-50 text-yellow-700" };

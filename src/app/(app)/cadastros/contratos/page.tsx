@@ -11,13 +11,7 @@ import { Label } from "@/components/ui/label";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const initialContratos = [
-  { id: "1", number: "CTR-2025-001", counterpart: "Fornecedor ABC Ltda", type: "FORNECEDOR", object: "Serviços de Manutenção Predial", value: 150000, startDate: "2025-01-01", endDate: "2025-12-31", status: "VIGENTE", parcelas: 12 },
-  { id: "2", number: "CTR-2025-002", counterpart: "Editora Saraiva S.A.", type: "FORNECEDOR", object: "Fornecimento de Material Didático", value: 85000, startDate: "2025-03-01", endDate: "2025-08-31", status: "VIGENTE", parcelas: 6 },
-  { id: "3", number: "CTR-2024-015", counterpart: "João Silva — MAT-2024-001", type: "ALUNO", object: "Contrato de Prestação de Serviços Educacionais", value: 24000, startDate: "2024-02-01", endDate: "2024-12-15", status: "ENCERRADO", parcelas: 11 },
-  { id: "4", number: "CTR-2025-008", counterpart: "Maria Oliveira — MAT-2024-002", type: "ALUNO", object: "Contrato de Prestação de Serviços Educacionais", value: 36000, startDate: "2025-02-01", endDate: "2027-12-31", status: "VIGENTE", parcelas: 36 },
-  { id: "5", number: "CTR-2025-003", counterpart: "Tech Solutions S.A.", type: "FORNECEDOR", object: "Licença de Software de Gestão Acadêmica", value: 48000, startDate: "2025-01-15", endDate: "2026-01-14", status: "VIGENTE", parcelas: 12 },
-];
+const initialContratos: { id: string; number: string; counterpart: string; type: string; object: string; value: number; startDate: string; endDate: string; status: string; parcelas: number }[] = [];
 
 const statusColors: Record<string, string> = {
   VIGENTE: "bg-green-50 text-green-700",

@@ -11,12 +11,7 @@ import { toast } from "@/hooks/use-toast";
 
 type Criterio = { id: string; professor: string; disciplina: string; centroCusto: string; percentual: number };
 
-const mockCriterios: Criterio[] = [
-  { id: "1", professor: "Dr. Carlos Mendes", disciplina: "Cálculo Estrutural", centroCusto: "CC-001 — Engenharia", percentual: 100 },
-  { id: "2", professor: "Dra. Ana Paula Lima", disciplina: "Anatomia Humana", centroCusto: "CC-002 — Medicina", percentual: 100 },
-  { id: "3", professor: "Dr. Roberto Alves", disciplina: "Direito Constitucional", centroCusto: "CC-003 — Direito", percentual: 60 },
-  { id: "4", professor: "Dr. Roberto Alves", disciplina: "Direito Constitucional", centroCusto: "CC-005 — Pesquisa", percentual: 40 },
-];
+const mockCriterios: Criterio[] = [];
 
 export default function RateioCriterioProfessorPage() {
   const [criterios, setCriterios] = useState<Criterio[]>(mockCriterios);

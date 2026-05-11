@@ -8,13 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-const mockRateios = [
-  { id: "1", data: "2026-05-02", titulo: "REC-2025-001", aluno: "João Silva", centroCusto: "CC-001 — Engenharia", percentual: 100, valor: 2800, competencia: "2026-05", tipo: "AUTOMATICO" },
-  { id: "2", data: "2026-05-02", titulo: "REC-2025-002", aluno: "Maria Oliveira", centroCusto: "CC-002 — Medicina", percentual: 100, valor: 4500, competencia: "2026-05", tipo: "AUTOMATICO" },
-  { id: "3", data: "2026-05-02", titulo: "REC-2025-003", aluno: "Pedro Santos", centroCusto: "CC-003 — Direito", percentual: 80, valor: 1760, competencia: "2026-05", tipo: "AUTOMATICO" },
-  { id: "4", data: "2026-05-02", titulo: "REC-2025-003", aluno: "Pedro Santos", centroCusto: "CC-004 — Administrativo", percentual: 20, valor: 440, competencia: "2026-05", tipo: "AUTOMATICO" },
-  { id: "5", data: "2026-04-01", titulo: "REC-2025-006", aluno: "Carla Mendes", centroCusto: "CC-002 — Medicina", percentual: 100, valor: 4500, competencia: "2026-04", tipo: "MANUAL" },
-];
+const mockRateios: { id: string; data: string; titulo: string; aluno: string; centroCusto: string; percentual: number; valor: number; competencia: string; tipo: string }[] = [];
 
 export default function ConsultaRateioPage() {
   const [search, setSearch] = useState("");

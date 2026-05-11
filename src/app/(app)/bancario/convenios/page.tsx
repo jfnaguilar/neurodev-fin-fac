@@ -10,11 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const mockCovenants = [
-  { id: "1", bankCode: "341", bankName: "Itaú Unibanco", agency: "1234", account: "56789-0", covenantCode: "12345", wallet: "109", layout: "CNAB240", type: "PAYMENT", isActive: true },
-  { id: "2", bankCode: "237", bankName: "Bradesco", agency: "5678", account: "98765-4", covenantCode: "67890", wallet: "09", layout: "CNAB400", type: "COLLECTION", isActive: true },
-  { id: "3", bankCode: "033", bankName: "Santander", agency: "9012", account: "12345-6", covenantCode: "11111", wallet: "101", layout: "CNAB240", type: "COLLECTION", isActive: false },
-];
+const mockCovenants: { id: string; bankCode: string; bankName: string; agency: string; account: string; covenantCode: string; wallet: string; layout: string; type: string; isActive: boolean }[] = [];
 
 const banks = [
   { code: "001", name: "Banco do Brasil" },

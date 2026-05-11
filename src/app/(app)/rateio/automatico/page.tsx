@@ -9,12 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockPreview = [
-  { id: "1", titulo: "REC-2025-001", aluno: "João Silva", valor: 2800, centroCusto: "CC-001 — Engenharia", percentual: 100, valorRateado: 2800 },
-  { id: "2", titulo: "REC-2025-002", aluno: "Maria Oliveira", valor: 4500, centroCusto: "CC-002 — Medicina", percentual: 100, valorRateado: 4500 },
-  { id: "3", titulo: "REC-2025-003", aluno: "Pedro Santos", valor: 2200, centroCusto: "CC-003 — Direito", percentual: 80, valorRateado: 1760 },
-  { id: "4", titulo: "REC-2025-003", aluno: "Pedro Santos", valor: 2200, centroCusto: "CC-004 — Administrativo", percentual: 20, valorRateado: 440 },
-];
+const mockPreview: { id: string; titulo: string; aluno: string; valor: number; centroCusto: string; percentual: number; valorRateado: number }[] = [];
 
 export default function RateioAutomaticoPage() {
   const [periodo, setPeriodo] = useState("2026-05");

@@ -9,13 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockTitulos = [
-  { id: "1", number: "REC-2025-001", customer: "João Silva", dueDate: "2026-05-05", value: 2800, course: "Engenharia Civil" },
-  { id: "2", number: "REC-2025-002", customer: "Maria Oliveira", dueDate: "2026-05-05", value: 4500, course: "Medicina" },
-  { id: "3", number: "REC-2025-003", customer: "Pedro Santos", dueDate: "2026-05-10", value: 2200, course: "Direito" },
-];
-
-type Titulo = typeof mockTitulos[0];
+type Titulo = { id: string; number: string; customer: string; dueDate: string; value: number; course: string };
+const mockTitulos: Titulo[] = [];
 
 export default function AlteraTitulosReceberPage() {
   const [titulos, setTitulos] = useState(mockTitulos);

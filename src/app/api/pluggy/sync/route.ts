@@ -96,7 +96,7 @@ export async function POST(req: Request) {
               amount: tx.amount,
               type: tx.type,
               category: tx.category ?? null,
-              bankData: null,
+              bankData: undefined,
             },
             update: {
               description: tx.description,

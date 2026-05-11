@@ -10,13 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCNPJ } from "@/lib/utils";
 
-const mockGrupos = [
-  { id: "1", name: "Grupo Educacional NeuroDev", cnpj: "00000000000191", description: "Mantenedora das instituições de ensino NeuroDev", isActive: true, empresas: ["Faculdade NeuroDev SP", "Faculdade NeuroDev RJ"] },
-  { id: "2", name: "Instituto Técnico Alpha", cnpj: "11111111000100", description: "Grupo focado em cursos técnicos e profissionalizantes", isActive: true, empresas: ["Instituto Alpha Centro", "Instituto Alpha Norte"] },
-  { id: "3", name: "Centro Universitário Beta", cnpj: "22222222000150", description: "Educação superior e pós-graduação", isActive: false, empresas: ["Centro Universitário Beta"] },
-];
-
-type Grupo = typeof mockGrupos[0];
+type Grupo = { id: string; name: string; cnpj: string; description: string; isActive: boolean; empresas: string[] };
+const mockGrupos: Grupo[] = [];
 const emptyGrupo = (): Partial<Grupo> => ({ name: "", cnpj: "", description: "", isActive: true });
 
 export default function GrupoEconomicoPage() {

@@ -9,12 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const mockConvenios = [
-  { id: "1", bank: "341 - Itaú Unibanco", agency: "1234-5", account: "56789-0", covenant: "12345", type: "COBRANÇA", modality: "CNAB 400", isActive: true },
-  { id: "2", bank: "001 - Banco do Brasil", agency: "5678-9", account: "11223-4", covenant: "67890", type: "PAGAMENTO", modality: "CNAB 240", isActive: true },
-  { id: "3", bank: "033 - Santander", agency: "9012-3", account: "44556-7", covenant: "24680", type: "COBRANÇA", modality: "CNAB 240", isActive: true },
-  { id: "4", bank: "237 - Bradesco", agency: "3456-7", account: "88990-1", covenant: "13579", type: "PAGAMENTO", modality: "CNAB 240", isActive: false },
-];
+const mockConvenios: { id: string; bank: string; agency: string; account: string; covenant: string; type: string; modality: string; isActive: boolean }[] = [];
 
 const empty = () => ({ bank: "", agency: "", account: "", covenant: "", type: "COBRANÇA", modality: "CNAB 400", isActive: true });
 type Conv = typeof mockConvenios[0];

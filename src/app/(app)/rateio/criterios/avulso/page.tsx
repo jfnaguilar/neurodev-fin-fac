@@ -12,11 +12,7 @@ import { toast } from "@/hooks/use-toast";
 
 type Criterio = { id: string; descricao: string; referencia: string; vigencia: string; centroCusto: string; percentual: number; ativo: boolean };
 
-const mockCriterios: Criterio[] = [
-  { id: "1", descricao: "Evento Acadêmico — Semana da Engenharia", referencia: "EVT-2026-01", vigencia: "2026-05-15", centroCusto: "CC-001 — Engenharia", percentual: 100, ativo: true },
-  { id: "2", descricao: "Projeto Extensão — Saúde na Comunidade", referencia: "PRJ-2026-03", vigencia: "2026-06-30", centroCusto: "CC-002 — Medicina", percentual: 60, ativo: true },
-  { id: "3", descricao: "Projeto Extensão — Saúde na Comunidade", referencia: "PRJ-2026-03", vigencia: "2026-06-30", centroCusto: "CC-005 — Pesquisa", percentual: 40, ativo: true },
-];
+const mockCriterios: Criterio[] = [];
 
 export default function RateioCriterioAvulsoPage() {
   const [criterios, setCriterios] = useState<Criterio[]>(mockCriterios);

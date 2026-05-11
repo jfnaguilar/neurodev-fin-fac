@@ -8,11 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-const mockLancamentos = [
-  { id: "1", date: "2026-04-30", titleNumber: "PAG-2025-010", debit: "4.1.01 — Salários e Encargos", credit: "2.1.01 — Fornecedores", value: 12000, costCenter: "ADM", histotico: "Pagamento tech solutions" },
-  { id: "2", date: "2026-04-28", titleNumber: "PAG-2025-009", debit: "4.1.02 — Serviços de Terceiros", credit: "2.1.01 — Fornecedores", value: 45000, costCenter: "MAN", histotico: "Pagamento ABC Ltda" },
-  { id: "3", date: "2026-04-25", titleNumber: "PAG-2025-008", debit: "4.1.02 — Serviços de Terceiros", credit: "2.1.01 — Fornecedores", value: 18000, costCenter: "ADM", histotico: "Pagamento manutenção predial" },
-];
+const mockLancamentos: { id: string; date: string; titleNumber: string; debit: string; credit: string; value: number; costCenter: string; histotico: string }[] = [];
 
 export default function ContabilizacaoPagarPage() {
   const [period, setPeriod] = useState("2026-04");

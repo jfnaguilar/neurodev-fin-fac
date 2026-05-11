@@ -7,11 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-const mockRemessas = [
-  { id: "1", filename: "REMESSA_COB_20260510.rem", bank: "341 - Itaú", date: "2026-05-10", titles: 4, value: 12300, status: "SENT" },
-  { id: "2", filename: "REMESSA_COB_20260405.rem", bank: "033 - Santander", date: "2026-04-05", titles: 6, value: 18900, status: "RETURNED" },
-  { id: "3", filename: "REMESSA_COB_20260310.rem", bank: "341 - Itaú", date: "2026-03-10", titles: 5, value: 14200, status: "RETURNED" },
-];
+const mockRemessas: { id: string; filename: string; bank: string; date: string; titles: number; value: number; status: string }[] = [];
 
 const statusColors: Record<string, string> = { SENT: "bg-blue-50 text-blue-700", RETURNED: "bg-green-50 text-green-700", PENDING: "bg-yellow-50 text-yellow-700" };
 const statusLabels: Record<string, string> = { SENT: "Enviada", RETURNED: "Retorno Processado", PENDING: "Aguardando" };

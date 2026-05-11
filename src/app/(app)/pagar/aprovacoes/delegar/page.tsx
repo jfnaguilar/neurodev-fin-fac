@@ -11,12 +11,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockDelegacoes = [
-  { id: "1", delegante: "João Aprovador", delegado: "Maria Financeiro", startDate: "2026-05-01", endDate: "2026-05-07", reason: "Férias", isActive: true },
-  { id: "2", delegante: "Carlos Admin", delegado: "João Aprovador", startDate: "2026-04-10", endDate: "2026-04-20", reason: "Viagem corporativa", isActive: false },
-];
+const mockDelegacoes: { id: string; delegante: string; delegado: string; startDate: string; endDate: string; reason: string; isActive: boolean }[] = [];
 
-const users = ["Administrador", "Maria Financeiro", "João Aprovador", "Ana Consulta"];
+const users: string[] = [];
 
 export default function DelegarAprovacoesPage() {
   const [delegacoes, setDelegacoes] = useState(mockDelegacoes);

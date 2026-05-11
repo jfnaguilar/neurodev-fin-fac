@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { encrypt, decrypt, mask } from "@/lib/encryption";
 
-const PROVIDERS = ["STRIPE", "ASAAS", "FOCUSNFE"] as const;
+const PROVIDERS = ["STRIPE", "ASAAS", "FOCUSNFE", "PAGSEGURO", "ABACATE", "RESEND", "SMTP", "GENNERA"] as const;
 
 export async function GET() {
   const session = await auth();
@@ -27,12 +27,24 @@ export async function GET() {
         apiKeyMasked: cfg?.apiKeyEnc ? mask(decrypt(cfg.apiKeyEnc)) : null,
         settings: {
           webhookSecret: settings.webhookSecret ? mask(settings.webhookSecret) : null,
+          pixExpirationDays: settings.pixExpirationDays ?? null,
           cnpj: settings.cnpj ?? null,
           codigoServico: settings.codigoServico ?? null,
           itemListaServico: settings.itemListaServico ?? null,
           aliquota: settings.aliquota ?? null,
           municipioPrestacao: settings.municipioPrestacao ?? null,
           municipalServiceCode: settings.municipalServiceCode ?? null,
+          fromEmail: settings.fromEmail ?? null,
+          fromName: settings.fromName ?? null,
+          smtpHost: settings.smtpHost ?? null,
+          smtpPort: settings.smtpPort ?? null,
+          smtpSecure: settings.smtpSecure ?? null,
+          smtpUser: settings.smtpUser ?? null,
+          idInstitution: settings.idInstitution ?? null,
+          username: settings.username ?? null,
+          autoSyncEnabled: settings.autoSyncEnabled ?? null,
+          delinquencyDaysThreshold: settings.delinquencyDaysThreshold ?? null,
+          autoBlockOnDelinquency: settings.autoBlockOnDelinquency ?? null,
         },
         testedAt: cfg?.testedAt ?? null,
         updatedAt: cfg?.updatedAt ?? null,

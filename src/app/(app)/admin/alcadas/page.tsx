@@ -11,55 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const initialWorkflows = [
-  {
-    id: "1",
-    name: "Até R$ 1.000",
-    minValue: 0,
-    maxValue: 1000,
-    escalationHours: 4,
-    levels: [{ level: 1, approvers: ["Maria Financeiro"], escalationHours: 4 }],
-    isActive: true,
-  },
-  {
-    id: "2",
-    name: "R$ 1.001 a R$ 10.000",
-    minValue: 1001,
-    maxValue: 10000,
-    escalationHours: 8,
-    levels: [
-      { level: 1, approvers: ["Maria Financeiro"], escalationHours: 8 },
-      { level: 2, approvers: ["João Aprovador"], escalationHours: 12 },
-    ],
-    isActive: true,
-  },
-  {
-    id: "3",
-    name: "R$ 10.001 a R$ 100.000",
-    minValue: 10001,
-    maxValue: 100000,
-    escalationHours: 4,
-    levels: [
-      { level: 1, approvers: ["Maria Financeiro"], escalationHours: 4 },
-      { level: 2, approvers: ["João Aprovador"], escalationHours: 8 },
-      { level: 3, approvers: ["Administrador"], escalationHours: 24 },
-    ],
-    isActive: true,
-  },
-  {
-    id: "4",
-    name: "Acima de R$ 100.000",
-    minValue: 100001,
-    maxValue: null,
-    escalationHours: 4,
-    levels: [
-      { level: 1, approvers: ["Maria Financeiro"], escalationHours: 4 },
-      { level: 2, approvers: ["João Aprovador"], escalationHours: 8 },
-      { level: 3, approvers: ["Administrador"], escalationHours: 12 },
-    ],
-    isActive: true,
-  },
-];
+const initialWorkflows: { id: string; name: string; minValue: number; maxValue: number | null; escalationHours: number; levels: { level: number; approvers: string[]; escalationHours: number }[]; isActive: boolean }[] = [];
 
 const emptyForm = () => ({ id: "", name: "", minValue: "", maxValue: "", escalationHours: "24" });
 

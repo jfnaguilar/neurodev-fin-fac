@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   CreditCard, FileText, Zap, CheckCircle, XCircle, AlertCircle,
-  Eye, EyeOff, Save, Loader2, RefreshCw, ExternalLink, Info,
+  Eye, EyeOff, Save, Loader2, RefreshCw, ExternalLink, Info, Settings,
+  GraduationCap, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Provider = "STRIPE" | "ASAAS" | "FOCUSNFE";
+type Provider = "STRIPE" | "ASAAS" | "FOCUSNFE" | "PAGSEGURO" | "ABACATE" | "RESEND" | "SMTP" | "GENNERA";
 
 interface ProviderConfig {
   provider: Provider;
@@ -55,15 +56,16 @@ const PROVIDER_META: Record<Provider, {
   },
   ASAAS: {
     name: "Asaas",
-    description: "Gateway brasileiro para boleto, PIX e NFSe. Mais simples para clientes nacionais. Suporte a split e subcontas.",
+    description: "Gateway brasileiro completo: boleto, PIX e NFSe. Suporta split de pagamento, subcontas e cobrança recorrente.",
     icon: Zap,
     color: "text-yellow-400",
-    features: ["Boleto bancário", "PIX", "NFSe (Nota Fiscal de Serviços)", "Webhook em tempo real"],
+    features: ["Boleto bancário", "PIX (QR Code + Copia-e-cola)", "NFSe (Nota Fiscal de Serviços)", "Webhook em tempo real", "Split de pagamento"],
     docsUrl: "https://docs.asaas.com",
     apiKeyLabel: "API Key",
-    apiKeyPlaceholder: "$aact_... ou $aasp_...",
+    apiKeyPlaceholder: "$aact_... (produção) ou $aasp_... (sandbox)",
     sandboxLabel: "Modo Sandbox",
     extraFields: [
+      { key: "pixExpirationDays", label: "Validade do PIX (dias)", placeholder: "1", hint: "Dias de validade do QR Code PIX a partir da data de emissão (padrão: 1 dia)" },
       { key: "municipalServiceCode", label: "Código Serviço Municipal (NFSe)", placeholder: "0101", hint: "Código LC116 para emissão de nota fiscal de serviço" },
     ],
   },
@@ -83,6 +85,83 @@ const PROVIDER_META: Record<Provider, {
       { key: "itemListaServico", label: "Item Lista Serviço LC116", placeholder: "01.01" },
       { key: "aliquota", label: "Alíquota ISS (%)", placeholder: "5" },
       { key: "municipioPrestacao", label: "Código IBGE Município", placeholder: "3550308", hint: "Ex: 3550308 = São Paulo" },
+    ],
+  },
+  PAGSEGURO: {
+    name: "PagSeguro (PagBank)",
+    description: "Gateway brasileiro líder de mercado. Autenticação OAuth2 via Client ID + Client Secret. Suporta boleto bancário com código de barras nativo.",
+    icon: CreditCard,
+    color: "text-orange-400",
+    features: ["Boleto bancário", "Código de barras nativo", "Webhook em tempo real", "Sandbox incluso"],
+    docsUrl: "https://dev.pagbank.uol.com.br/reference",
+    apiKeyLabel: "Client ID : Client Secret",
+    apiKeyPlaceholder: "clientId:clientSecret",
+    sandboxLabel: "Modo Sandbox",
+    extraFields: [],
+  },
+  ABACATE: {
+    name: "Abacate Pay",
+    description: "Fintech brasileira focada em boleto e PIX. Autenticação por API Key. Retorna uma página de checkout hospedada com boleto e PIX integrados.",
+    icon: Zap,
+    color: "text-green-400",
+    features: ["Boleto bancário", "PIX", "Página de checkout hospedada", "Webhook de eventos"],
+    docsUrl: "https://abacatepay.readme.io/reference",
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "eyJ... (Bearer token)",
+    sandboxLabel: "Modo Teste",
+    extraFields: [],
+  },
+  RESEND: {
+    name: "Resend",
+    description: "Plataforma moderna de e-mail transacional. Configure um domínio verificado no Resend e insira a API key. Sem servidores SMTP para gerenciar.",
+    icon: FileText,
+    color: "text-rose-400",
+    features: ["E-mail de boleto (com linha digitável)", "E-mail de PIX (QR Code inline)", "E-mail de NF-e/NFSe (PDF + XML)", "Alta entregabilidade"],
+    docsUrl: "https://resend.com/docs",
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "re_...",
+    sandboxLabel: "Modo Teste (envia apenas para e-mails verificados)",
+    extraFields: [
+      { key: "fromEmail", label: "E-mail Remetente", placeholder: "financeiro@suaempresa.com.br", hint: "Deve ser de um domínio verificado no Resend" },
+      { key: "fromName", label: "Nome do Remetente", placeholder: "Financeiro NeuroDev" },
+    ],
+  },
+  SMTP: {
+    name: "SMTP",
+    description: "Envio de e-mails via servidor SMTP próprio. Compatible com Gmail, Outlook, Amazon SES, Mailgun e qualquer servidor SMTP.",
+    icon: Settings,
+    color: "text-slate-400",
+    features: ["Boleto, PIX e NF-e por e-mail", "Servidor próprio / provedor de sua escolha", "Gmail, SES, Mailgun, Brevo e outros"],
+    docsUrl: "https://nodemailer.com/smtp/",
+    apiKeyLabel: "Senha SMTP",
+    apiKeyPlaceholder: "Senha do servidor SMTP (armazenada criptografada)",
+    sandboxLabel: "Modo Teste (não envia de fato — apenas valida conexão)",
+    extraFields: [
+      { key: "smtpHost", label: "Host SMTP", placeholder: "smtp.gmail.com", hint: "" },
+      { key: "smtpPort", label: "Porta SMTP", placeholder: "587", hint: "587 (STARTTLS) ou 465 (SSL)" },
+      { key: "smtpSecure", label: "SSL/TLS (porta 465)", placeholder: "false", hint: "Use 'true' para porta 465; 'false' para 587/25" },
+      { key: "smtpUser", label: "Usuário SMTP", placeholder: "financeiro@suaempresa.com.br" },
+      { key: "fromEmail", label: "E-mail Remetente", placeholder: "financeiro@suaempresa.com.br" },
+      { key: "fromName", label: "Nome do Remetente", placeholder: "Financeiro NeuroDev" },
+    ],
+  },
+  GENNERA: {
+    name: "Gennera",
+    description: "Sistema acadêmico Gennera. Sincroniza alunos, matrículas, contratos e pagamentos com o financeiro. Autenticação por usuário + senha da instituição.",
+    icon: GraduationCap,
+    color: "text-blue-400",
+    features: ["Sync de alunos (Persons)", "Sync de matrículas e faturas", "Importação de pagamentos", "Notificação de inadimplência", "Sync de turmas / cursos"],
+    docsUrl: "https://api2.gennera.com.br/docs/",
+    apiKeyLabel: "Senha do usuário Gennera",
+    apiKeyPlaceholder: "Senha de acesso à API Gennera (armazenada criptografada)",
+    sandboxLabel: "Ambiente de homologação Gennera",
+    extraFields: [
+      { key: "idInstitution", label: "ID da Instituição", placeholder: "123", hint: "Número da instituição cadastrada no Gennera (idInstitution)" },
+      { key: "username", label: "Usuário (login)", placeholder: "usuario@faculdade.edu.br", hint: "Login de acesso à API do Gennera" },
+      { key: "cnpj", label: "CNPJ da Instituição", placeholder: "00.000.000/0001-00", hint: "Apenas para referência/auditoria — não usado na autenticação" },
+      { key: "delinquencyDaysThreshold", label: "Limiar de inadimplência (dias)", placeholder: "30", hint: "Número de dias em atraso para considerar o aluno inadimplente no Gennera" },
+      { key: "autoSyncEnabled", label: "Sync automático habilitado", placeholder: "false", hint: "Ative 'true' para sincronizar automaticamente via cron (requer configuração de scheduler)" },
+      { key: "autoBlockOnDelinquency", label: "Bloquear matrícula ao inadimplir", placeholder: "false", hint: "Se 'true', atualiza o status da matrícula para bloqueado no Gennera quando inadimplente" },
     ],
   },
 };
@@ -297,11 +376,53 @@ function ProviderCard({ initial }: { initial: ProviderConfig }) {
               </div>
             )}
             {config.provider === "ASAAS" && (
-              <div className="p-3 bg-slate-800/50 rounded-lg">
-                <p className="text-xs text-slate-400 font-medium mb-1">URL do Webhook (configurar no painel Asaas):</p>
+              <div className="p-3 bg-slate-800/50 rounded-lg space-y-2">
+                <p className="text-xs text-slate-400 font-medium">URL do Webhook (configurar no painel Asaas → Integrações → Webhook):</p>
                 <code className="text-xs text-blue-400 font-mono break-all">
                   {typeof window !== "undefined" ? window.location.origin : "https://seu-dominio.com"}/api/webhooks/asaas
                 </code>
+                <p className="text-xs text-slate-500">
+                  Eventos tratados: <strong className="text-slate-400">PAYMENT_RECEIVED</strong>, <strong className="text-slate-400">PAYMENT_OVERDUE</strong>, <strong className="text-slate-400">PAYMENT_DELETED</strong> (boleto e PIX) e <strong className="text-slate-400">INVOICE_AUTHORIZED</strong> (NFSe).
+                </p>
+              </div>
+            )}
+            {config.provider === "PAGSEGURO" && (
+              <div className="p-3 bg-slate-800/50 rounded-lg space-y-2">
+                <p className="text-xs text-slate-400 font-medium">URL do Webhook (configurar em PagBank → Notificações):</p>
+                <code className="text-xs text-blue-400 font-mono break-all">
+                  {typeof window !== "undefined" ? window.location.origin : "https://seu-dominio.com"}/api/webhooks/pagseguro
+                </code>
+                <p className="text-xs text-slate-500">
+                  Credenciais no formato <strong className="text-slate-400">clientId:clientSecret</strong> — obtidas no console PagBank em Sua Conta → Credenciais.
+                </p>
+              </div>
+            )}
+            {config.provider === "ABACATE" && (
+              <div className="p-3 bg-slate-800/50 rounded-lg space-y-2">
+                <p className="text-xs text-slate-400 font-medium">URL do Webhook (configurar no dashboard Abacate Pay):</p>
+                <code className="text-xs text-blue-400 font-mono break-all">
+                  {typeof window !== "undefined" ? window.location.origin : "https://seu-dominio.com"}/api/webhooks/abacate
+                </code>
+                <p className="text-xs text-slate-500">
+                  Eventos suportados: <strong className="text-slate-400">billing.paid</strong>, <strong className="text-slate-400">billing.expired</strong>, <strong className="text-slate-400">billing.cancelled</strong>
+                </p>
+              </div>
+            )}
+            {config.provider === "GENNERA" && (
+              <div className="p-3 bg-blue-950/30 border border-blue-900/40 rounded-lg space-y-2">
+                <p className="text-xs text-blue-300 font-medium flex items-center gap-1.5">
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  Painel de Sincronização Gennera
+                </p>
+                <p className="text-xs text-blue-200/70 leading-relaxed">
+                  Após salvar e testar a conexão, acesse o painel dedicado para executar e acompanhar as sincronizações.
+                </p>
+                <a
+                  href="/admin/integracoes/gennera"
+                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium"
+                >
+                  Abrir painel de sincronização <ArrowRight className="h-3 w-3" />
+                </a>
               </div>
             )}
 
@@ -370,22 +491,43 @@ export default function IntegracoesPage() {
           <strong>Sobre o Pluggy:</strong> A integração Pluggy já está ativa em{" "}
           <span className="font-mono">Integrações Bancárias → Open Finance</span>.
           O Pluggy é um <strong>agregador de dados bancários em modo leitura</strong> (Open Finance Brasil) e
-          não emite boletos. Para emissão de cobranças, use Stripe ou Asaas abaixo.
+          não emite boletos. Para emissão de cobranças, use Stripe, Asaas, PagSeguro ou Abacate Pay abaixo.
         </div>
       </div>
 
       {/* Provider cards */}
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-5 animate-pulse h-24" />
           ))}
         </div>
       ) : (
-        <div className="space-y-4">
-          {configs.map((cfg) => (
-            <ProviderCard key={cfg.provider} initial={cfg} />
-          ))}
+        <div className="space-y-6">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Pagamento e Faturamento</p>
+            <div className="space-y-4">
+              {configs
+                .filter((c) => ["STRIPE", "ASAAS", "FOCUSNFE", "PAGSEGURO", "ABACATE"].includes(c.provider))
+                .map((cfg) => <ProviderCard key={cfg.provider} initial={cfg} />)}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Envio de Cobranças por E-mail</p>
+            <div className="space-y-4">
+              {configs
+                .filter((c) => ["RESEND", "SMTP"].includes(c.provider))
+                .map((cfg) => <ProviderCard key={cfg.provider} initial={cfg} />)}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Integração Acadêmica</p>
+            <div className="space-y-4">
+              {configs
+                .filter((c) => ["GENNERA"].includes(c.provider))
+                .map((cfg) => <ProviderCard key={cfg.provider} initial={cfg} />)}
+            </div>
+          </div>
         </div>
       )}
 
@@ -397,6 +539,9 @@ export default function IntegracoesPage() {
             ["POST", "/api/boleto/emitir", "Emite boleto a partir de um título a receber"],
             ["GET", "/api/boleto/{id}", "Consulta status do boleto (atualiza automaticamente)"],
             ["DELETE", "/api/boleto/{id}", "Cancela boleto pendente"],
+            ["POST", "/api/pix/emitir", "Emite cobrança PIX (QR Code + copia-e-cola) via Asaas"],
+            ["GET", "/api/pix/{id}", "Consulta status do PIX (atualiza automaticamente)"],
+            ["DELETE", "/api/pix/{id}", "Cancela cobrança PIX pendente"],
             ["POST", "/api/nfe/emitir", "Emite NF-e/NFSe a partir de um título"],
             ["GET", "/api/nfe/{id}", "Consulta status da nota fiscal"],
             ["DELETE", "/api/nfe/{id}", "Cancela nota fiscal emitida"],

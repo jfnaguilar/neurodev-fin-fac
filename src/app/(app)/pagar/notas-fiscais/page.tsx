@@ -32,39 +32,7 @@ interface NotaFiscal {
   contaGerada?: string;
 }
 
-const mockNotas: NotaFiscal[] = [
-  {
-    id: "1",
-    chave: "35260512345678000195550010000123451000123450",
-    numero: "000123",
-    serie: "001",
-    emissao: "2026-05-02",
-    fornecedor: "Editora Saraiva S.A.",
-    cnpjFornecedor: "98.765.432/0001-17",
-    valorTotal: 8500,
-    valorIPI: 0,
-    valorICMS: 1445,
-    itens: 12,
-    status: "PROCESSADA",
-    arquivo: "NFe_35260512345678.xml",
-    contaGerada: "PAG-NF-2026-001",
-  },
-  {
-    id: "2",
-    chave: "35260511122233000155550010000045671000045670",
-    numero: "000046",
-    serie: "001",
-    emissao: "2026-05-03",
-    fornecedor: "Tech Solutions S.A.",
-    cnpjFornecedor: "11.122.233/0001-55",
-    valorTotal: 4200,
-    valorIPI: 0,
-    valorICMS: 714,
-    itens: 3,
-    status: "IMPORTADA",
-    arquivo: "NFe_35260511122233.xml",
-  },
-];
+const mockNotas: NotaFiscal[] = [];
 
 const statusColors: Record<NFStatus, string> = {
   IMPORTADA: "bg-blue-50 text-blue-700",

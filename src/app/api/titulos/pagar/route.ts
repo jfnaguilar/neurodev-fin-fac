@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     const totalValue = data.installments.reduce((sum, i) => sum + i.value, 0);
 
-    const title = await prisma.$transaction(async (tx: typeof prisma) => {
+    const title = await prisma.$transaction(async (tx) => {
       const created = await tx.paymentTitle.create({
         data: {
           tenantId: data.tenantId,

@@ -8,12 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-const mockHistorico = [
-  { id: "1", titleNumber: "PAG-2025-010", supplier: "Fornecedor ABC Ltda", value: 45000, requestedBy: "Maria Financeiro", approvedBy: "João Aprovador", date: "2026-04-29", result: "APPROVED", observation: "Dentro da alçada" },
-  { id: "2", titleNumber: "PAG-2025-009", supplier: "Editora Saraiva S.A.", value: 28500, requestedBy: "Maria Financeiro", approvedBy: "João Aprovador", date: "2026-04-28", result: "APPROVED", observation: "" },
-  { id: "3", titleNumber: "PAG-2025-008", supplier: "Tech Solutions S.A.", value: 120000, requestedBy: "Carlos Admin", approvedBy: "Diretoria", date: "2026-04-27", result: "REJECTED", observation: "Orçamento excedido para o mês" },
-  { id: "4", titleNumber: "PAG-2025-007", supplier: "Manutenção Predial", value: 18000, requestedBy: "Maria Financeiro", approvedBy: "João Aprovador", date: "2026-04-25", result: "APPROVED", observation: "" },
-];
+const mockHistorico: { id: string; titleNumber: string; supplier: string; value: number; requestedBy: string; approvedBy: string; date: string; result: string; observation: string }[] = [];
 
 export default function HistoricoAprovacoesPage() {
   const [search, setSearch] = useState("");

@@ -9,12 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockTitulos = [
-  { id: "1", number: "PAG-2025-002", supplier: "Editora Saraiva S.A.", dueDate: "2026-05-01", value: 28500, juros: 285, desconto: 0, multa: 142.5 },
-  { id: "2", number: "PAG-2025-005", supplier: "Gráfica Impressos ME", dueDate: "2026-04-28", value: 8500, juros: 170, desconto: 0, multa: 85 },
-];
-
-type Titulo = typeof mockTitulos[0];
+type Titulo = { id: string; number: string; supplier: string; dueDate: string; value: number; juros: number; desconto: number; multa: number };
+const mockTitulos: Titulo[] = [];
 
 export default function AlteraJurosPage() {
   const [titulos, setTitulos] = useState(mockTitulos);

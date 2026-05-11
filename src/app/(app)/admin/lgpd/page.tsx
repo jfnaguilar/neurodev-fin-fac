@@ -1,6 +1,7 @@
 "use client";
+
 import React, { useState } from "react";
-import { Shield, Download, Trash2, Eye, CheckCircle2 } from "lucide-react";
+import { Shield, Download, Eye, CheckCircle2, ClipboardList } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +10,15 @@ import { Separator } from "@/components/ui/separator";
 import { formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockSolicitacoes = [
-  { id: "1", titular: "João Silva", cpf: "123.456.789-00", tipo: "ACESSO", data: "2026-04-15", status: "ATENDIDA", prazo: "2026-05-15" },
-  { id: "2", titular: "Maria Oliveira", cpf: "987.654.321-00", tipo: "EXCLUSAO", data: "2026-04-20", status: "PENDENTE", prazo: "2026-05-20" },
-  { id: "3", titular: "Pedro Santos", cpf: "111.222.333-44", tipo: "PORTABILIDADE", data: "2026-05-01", status: "PENDENTE", prazo: "2026-05-31" },
-];
+interface Solicitacao {
+  id: string;
+  titular: string;
+  cpf: string;
+  tipo: string;
+  data: string;
+  status: string;
+  prazo: string;
+}
 
 const statusConfig: Record<string, string> = {
   PENDENTE: "bg-yellow-50 text-yellow-700",
@@ -30,9 +35,9 @@ const tipoLabel: Record<string, string> = {
 };
 
 export default function LgpdPage() {
-  const [solicitacoes, setSolicitacoes] = useState(mockSolicitacoes);
+  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
   const [retemDados, setRetemDados] = useState("60");
-  const [politicaVersao, setPoliticaVersao] = useState("v2.1 — Abril 2026");
+  const [politicaVersao, setPoliticaVersao] = useState("");
 
   return (
     <div className="space-y-5">
@@ -51,7 +56,7 @@ export default function LgpdPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Versão da Política de Privacidade</Label>
-                <Input value={politicaVersao} onChange={(e) => setPoliticaVersao(e.target.value)} />
+                <Input value={politicaVersao} onChange={(e) => setPoliticaVersao(e.target.value)} placeholder="Ex: v1.0 — Janeiro 2025" />
               </div>
             </div>
             <Separator />
@@ -94,48 +99,50 @@ export default function LgpdPage() {
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-sm">Solicitações de Titulares de Dados (LGPD Art. 18)</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/30">
-              <tr>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Titular</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">CPF</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Solicitação</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Data</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Prazo</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Status</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {solicitacoes.map((s) => (
-                <tr key={s.id} className="hover:bg-muted/20 transition-colors">
-                  <td className="py-3 px-4">{s.titular}</td>
-                  <td className="py-3 px-4 font-mono text-xs text-muted-foreground">{s.cpf}</td>
-                  <td className="py-3 px-4 text-xs">{tipoLabel[s.tipo] ?? s.tipo}</td>
-                  <td className="py-3 px-4 text-center text-xs text-muted-foreground">{formatDate(s.data)}</td>
-                  <td className="py-3 px-4 text-center text-xs text-muted-foreground">{formatDate(s.prazo)}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusConfig[s.status] ?? ""}`}>{s.status}</span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5" /></Button>
-                      {s.status === "PENDENTE" && (
-                        <>
+          {solicitacoes.length === 0 ? (
+            <div className="py-14 text-center">
+              <ClipboardList className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground text-sm">Nenhuma solicitação de titular registrada.</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">Titular</th>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">CPF</th>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">Solicitação</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Data</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Prazo</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Status</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {solicitacoes.map((s) => (
+                  <tr key={s.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-3 px-4">{s.titular}</td>
+                    <td className="py-3 px-4 font-mono text-xs text-muted-foreground">{s.cpf}</td>
+                    <td className="py-3 px-4 text-xs">{tipoLabel[s.tipo] ?? s.tipo}</td>
+                    <td className="py-3 px-4 text-center text-xs text-muted-foreground">{formatDate(s.data)}</td>
+                    <td className="py-3 px-4 text-center text-xs text-muted-foreground">{formatDate(s.prazo)}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusConfig[s.status] ?? ""}`}>{s.status}</span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5" /></Button>
+                        {s.status === "PENDENTE" && (
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => { setSolicitacoes((p) => p.map((x) => x.id === s.id ? { ...x, status: "ATENDIDA" } : x)); toast({ title: "Solicitação atendida." }); }}>
                             <CheckCircle2 className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600" onClick={() => setSolicitacoes((p) => p.filter((x) => x.id !== s.id))}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -7,27 +7,49 @@ export async function POST(req: Request) {
   const { event: eventType, payment, invoice } = event;
 
   if (payment?.id) {
+    const isPix = payment.billingType === "PIX";
+
     if (eventType === "PAYMENT_RECEIVED" || eventType === "PAYMENT_CONFIRMED") {
-      await prisma.boletoEmission.updateMany({
-        where: { externalId: payment.id },
-        data: {
-          status: "PAID",
-          paidAt: payment.paymentDate ? new Date(payment.paymentDate) : new Date(),
-          webhookData: event,
-        },
-      });
+      const paidAt = payment.paymentDate ? new Date(payment.paymentDate) : new Date();
+      if (isPix) {
+        await prisma.pixEmission.updateMany({
+          where: { externalId: payment.id },
+          data: { status: "PAID", paidAt, webhookData: event },
+        });
+      } else {
+        await prisma.boletoEmission.updateMany({
+          where: { externalId: payment.id },
+          data: { status: "PAID", paidAt, webhookData: event },
+        });
+      }
     }
+
     if (eventType === "PAYMENT_DELETED" || eventType === "PAYMENT_REFUNDED") {
-      await prisma.boletoEmission.updateMany({
-        where: { externalId: payment.id },
-        data: { status: "CANCELLED", canceledAt: new Date(), webhookData: event },
-      });
+      if (isPix) {
+        await prisma.pixEmission.updateMany({
+          where: { externalId: payment.id },
+          data: { status: "CANCELLED", canceledAt: new Date(), webhookData: event },
+        });
+      } else {
+        await prisma.boletoEmission.updateMany({
+          where: { externalId: payment.id },
+          data: { status: "CANCELLED", canceledAt: new Date(), webhookData: event },
+        });
+      }
     }
+
     if (eventType === "PAYMENT_OVERDUE") {
-      await prisma.boletoEmission.updateMany({
-        where: { externalId: payment.id },
-        data: { status: "EXPIRED", webhookData: event },
-      });
+      if (isPix) {
+        await prisma.pixEmission.updateMany({
+          where: { externalId: payment.id },
+          data: { status: "EXPIRED", webhookData: event },
+        });
+      } else {
+        await prisma.boletoEmission.updateMany({
+          where: { externalId: payment.id },
+          data: { status: "EXPIRED", webhookData: event },
+        });
+      }
     }
   }
 

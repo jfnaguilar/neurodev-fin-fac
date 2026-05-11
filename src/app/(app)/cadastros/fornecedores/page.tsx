@@ -1,23 +1,30 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Plus, Search, Edit, Trash2, Loader2, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCNPJ } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { ExportImportBar } from "@/components/ui/ExportImportBar";
+import { useSession } from "next-auth/react";
 
-const initialSuppliers = [
-  { id: "1", name: "Fornecedor ABC Ltda", fantasia: "", document: "12345678000190", group: "Serviços", subgroup: "Manutenção", email: "contato@abc.com", phone: "(11) 99999-0000", isActive: true },
-  { id: "2", name: "Editora Saraiva S.A.", fantasia: "Saraiva", document: "98765432000117", group: "Material", subgroup: "Didático", email: "comercial@saraiva.com", phone: "(11) 3333-4444", isActive: true },
-  { id: "3", name: "Tech Solutions S.A.", fantasia: "TechSol", document: "11122233000155", group: "Tecnologia", subgroup: "Software", email: "vendas@tech.com", phone: "(11) 5555-6666", isActive: true },
-  { id: "4", name: "Gráfica Impressos ME", fantasia: "", document: "44455566000177", group: "Serviços", subgroup: "Gráfica", email: "orcamento@grafica.com", phone: "(11) 7777-8888", isActive: false },
-];
+interface Supplier {
+  id: string;
+  name: string;
+  tradeName: string | null;
+  document: string;
+  documentType: string;
+  group: string | null;
+  subgroup: string | null;
+  email: string | null;
+  phone: string | null;
+  isActive: boolean;
+}
 
 function applyCNPJMask(value: string): string {
   const d = value.replace(/\D/g, "").slice(0, 14);
@@ -28,32 +35,85 @@ function applyCNPJMask(value: string): string {
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 
-const emptyForm = () => ({ id: "", name: "", fantasia: "", document: "", group: "", subgroup: "", email: "", phone: "", isActive: true });
+const emptyForm = () => ({
+  id: "", name: "", tradeName: "", document: "", group: "", subgroup: "", email: "", phone: "",
+});
 
 export default function FornecedoresPage() {
-  const [suppliers, setSuppliers] = useState(initialSuppliers);
+  const { data: session } = useSession();
+  const tenantId = (session?.user as any)?.currentTenantId as string | undefined;
+
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<any>(emptyForm());
+  const [saving, setSaving] = useState(false);
 
-  const filtered = useMemo(() => suppliers.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.document.includes(search.replace(/\D/g, ""))
-  ), [suppliers, search]);
+  const fetchSuppliers = useCallback(async () => {
+    if (!tenantId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/fornecedores?tenantId=${tenantId}`);
+      if (res.ok) {
+        const { data } = await res.json();
+        setSuppliers(data);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [tenantId]);
+
+  useEffect(() => { fetchSuppliers(); }, [fetchSuppliers]);
+
+  const filtered = suppliers.filter((s) => {
+    const q = search.toLowerCase();
+    return !search
+      || s.name.toLowerCase().includes(q)
+      || s.document.includes(search.replace(/\D/g, ""));
+  });
 
   const openNew = () => { setFormData(emptyForm()); setShowForm(true); };
-  const openEdit = (s: typeof initialSuppliers[0]) => { setFormData({ ...s, document: formatCNPJ(s.document) }); setShowForm(true); };
+  const openEdit = (s: Supplier) => {
+    setFormData({ id: s.id, name: s.name, tradeName: s.tradeName ?? "", document: formatCNPJ(s.document), group: s.group ?? "", subgroup: s.subgroup ?? "", email: s.email ?? "", phone: s.phone ?? "" });
+    setShowForm(true);
+  };
 
-  const handleSave = () => {
-    if (!formData.name || !formData.document) return;
-    const raw = { ...formData, document: formData.document.replace(/\D/g, "") };
-    setSuppliers((prev) => {
-      const idx = prev.findIndex((s) => s.id === raw.id);
-      if (idx >= 0) { const arr = [...prev]; arr[idx] = raw; return arr; }
-      return [...prev, { ...raw, id: String(Date.now()) }];
-    });
-    toast({ title: "Fornecedor salvo!", description: `${formData.name} cadastrado com sucesso.` });
-    setShowForm(false);
+  const handleSave = async () => {
+    if (!formData.name || !formData.document || !tenantId) return;
+    setSaving(true);
+    try {
+      const payload = {
+        ...formData,
+        tenantId,
+        document: formData.document.replace(/\D/g, ""),
+      };
+      let res: Response;
+      if (formData.id) {
+        res = await fetch(`/api/fornecedores/${formData.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      } else {
+        res = await fetch("/api/fornecedores", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      }
+      if (res.ok) {
+        toast({ title: formData.id ? "Fornecedor atualizado!" : "Fornecedor criado!" });
+        setShowForm(false);
+        fetchSuppliers();
+      } else {
+        const { error } = await res.json();
+        toast({ title: "Erro", description: error, variant: "destructive" });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (s: Supplier) => {
+    if (!confirm(`Desativar "${s.name}"?`)) return;
+    const res = await fetch(`/api/fornecedores/${s.id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast({ title: "Fornecedor desativado." });
+      fetchSuppliers();
+    }
   };
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -66,9 +126,12 @@ export default function FornecedoresPage() {
           <h1 className="text-xl font-bold tracking-tight">Fornecedores / Credores</h1>
           <p className="text-sm text-muted-foreground">Cadastros › Fornecedores</p>
         </div>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" />Novo Fornecedor
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportImportBar entity="fornecedores" onImportSuccess={fetchSuppliers} />
+          <Button size="sm" onClick={openNew}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />Novo Fornecedor
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -82,48 +145,62 @@ export default function FornecedoresPage() {
 
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/30">
-              <tr>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Razão Social</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">CNPJ/CPF</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Grupo/Subgrupo</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Contato</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Situação</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((supplier) => (
-                <tr key={supplier.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="py-3 px-4 font-medium">{supplier.name}</td>
-                  <td className="py-3 px-4 text-muted-foreground tabular-nums font-mono text-xs">{formatCNPJ(supplier.document)}</td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm">{supplier.group}</span>
-                    {supplier.subgroup && <span className="text-muted-foreground"> / {supplier.subgroup}</span>}
-                  </td>
-                  <td className="py-3 px-4 text-muted-foreground text-xs">
-                    <div>{supplier.email}</div>
-                    <div>{supplier.phone}</div>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <Badge variant={supplier.isActive ? "outline" : "secondary"} className="text-xs">
-                      {supplier.isActive ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center justify-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(supplier)}><Edit className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setSuppliers((p) => p.filter((x) => x.id !== supplier.id))}><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </td>
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">Razão Social</th>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">CNPJ/CPF</th>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">Grupo/Subgrupo</th>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">Contato</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Situação</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Ações</th>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={6} className="py-10 text-center text-muted-foreground">Nenhum fornecedor encontrado.</td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((s) => (
+                  <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                    <td className="py-3 px-4 font-medium">{s.name}</td>
+                    <td className="py-3 px-4 text-muted-foreground tabular-nums font-mono text-xs">{formatCNPJ(s.document)}</td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm">{s.group ?? "—"}</span>
+                      {s.subgroup && <span className="text-muted-foreground"> / {s.subgroup}</span>}
+                    </td>
+                    <td className="py-3 px-4 text-muted-foreground text-xs">
+                      {s.email && <div>{s.email}</div>}
+                      {s.phone && <div>{s.phone}</div>}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <Badge variant={s.isActive ? "outline" : "secondary"} className="text-xs">
+                        {s.isActive ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Edit className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(s)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && !loading && (
+                  <tr>
+                    <td colSpan={6} className="py-14 text-center">
+                      <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground text-sm">Nenhum fornecedor encontrado.</p>
+                      <Button size="sm" variant="outline" className="mt-3" onClick={openNew}>
+                        <Plus className="h-3.5 w-3.5 mr-1.5" />Novo Fornecedor
+                      </Button>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </CardContent>
       </Card>
 
@@ -138,7 +215,7 @@ export default function FornecedoresPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Nome Fantasia</Label>
-                <Input placeholder="Nome fantasia..." value={formData.fantasia} onChange={set("fantasia")} />
+                <Input placeholder="Nome fantasia..." value={formData.tradeName} onChange={set("tradeName")} />
               </div>
               <div className="space-y-1.5">
                 <Label>CNPJ/CPF <span className="text-red-500">*</span></Label>
@@ -167,7 +244,10 @@ export default function FornecedoresPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-              <Button onClick={handleSave} disabled={!formData.name || !formData.document}>Salvar Fornecedor</Button>
+              <Button onClick={handleSave} disabled={!formData.name || !formData.document || saving}>
+                {saving && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                Salvar Fornecedor
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

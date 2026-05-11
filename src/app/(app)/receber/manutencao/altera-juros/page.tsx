@@ -8,12 +8,8 @@ import { Label } from "@/components/ui/label";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockTitulos = [
-  { id: "1", number: "REC-2025-003", customer: "Pedro Santos", dueDate: "2026-04-05", value: 2200, juros: 44, multa: 22, desconto: 0 },
-  { id: "2", number: "REC-2025-012", customer: "Carlos Lima", dueDate: "2026-03-15", value: 1500, juros: 75, multa: 15, desconto: 0 },
-];
-
-type Titulo = typeof mockTitulos[0];
+type Titulo = { id: string; number: string; customer: string; dueDate: string; value: number; juros: number; multa: number; desconto: number };
+const mockTitulos: Titulo[] = [];
 
 export default function AlteraJurosReceberPage() {
   const [titulos, setTitulos] = useState(mockTitulos);

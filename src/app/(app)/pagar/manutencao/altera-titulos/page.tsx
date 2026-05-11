@@ -10,13 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockTitulos = [
-  { id: "1", number: "PAG-2025-001", supplier: "Fornecedor ABC Ltda", dueDate: "2026-05-05", value: 45000, situation: "RELEASED", observation: "" },
-  { id: "2", number: "PAG-2025-002", supplier: "Editora Saraiva S.A.", dueDate: "2026-05-01", value: 28500, situation: "OVERDUE", observation: "" },
-  { id: "3", number: "PAG-2025-003", supplier: "Manutenção Predial", dueDate: "2026-05-10", value: 18000, situation: "RELEASED", observation: "" },
-];
-
-type Titulo = typeof mockTitulos[0];
+type Titulo = { id: string; number: string; supplier: string; dueDate: string; value: number; situation: string; observation: string };
+const mockTitulos: Titulo[] = [];
 
 export default function AlteraTitulosPage() {
   const [titulos, setTitulos] = useState(mockTitulos);

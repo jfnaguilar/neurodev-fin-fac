@@ -6,14 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate } from "@/lib/utils";
 
-const mockLogs = [
-  { id: "1", datetime: "2026-05-10 09:14:32", type: "REMESSA", format: "CNAB 240", bank: "341 — Itaú", filename: "PGTO_241_20260510.rem", records: 4, status: "SUCCESS", message: "Arquivo transmitido com sucesso" },
-  { id: "2", datetime: "2026-05-10 09:12:01", type: "REMESSA", format: "CNAB 400", bank: "033 — Santander", filename: "COB_400_20260510.rem", records: 6, status: "SUCCESS", message: "Arquivo transmitido com sucesso" },
-  { id: "3", datetime: "2026-05-09 14:35:18", type: "RETORNO", format: "CNAB 240", bank: "341 — Itaú", filename: "RETORNO_241_20260509.ret", records: 4, status: "SUCCESS", message: "4 registros processados, 0 erros" },
-  { id: "4", datetime: "2026-05-08 11:20:45", type: "RETORNO", format: "CNAB 400", bank: "033 — Santander", filename: "RETORNO_400_20260508.ret", records: 6, status: "ERROR", message: "Falha ao processar: código de banco inválido no registro 3" },
-  { id: "5", datetime: "2026-05-07 08:55:03", type: "REMESSA", format: "CNAB 240", bank: "237 — Bradesco", filename: "COB_241_20260507.rem", records: 3, status: "PENDING", message: "Aguardando confirmação do banco" },
-  { id: "6", datetime: "2026-05-05 16:10:22", type: "RETORNO", format: "CNAB 240", bank: "237 — Bradesco", filename: "RETORNO_241_20260505.ret", records: 3, status: "SUCCESS", message: "3 boletos confirmados, 0 rejeitados" },
-];
+const mockLogs: { id: string; datetime: string; type: string; format: string; bank: string; filename: string; records: number; status: string; message: string }[] = [];
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
   SUCCESS: { label: "Sucesso", icon: <CheckCircle2 className="h-3.5 w-3.5" />, className: "text-green-700 bg-green-50" },

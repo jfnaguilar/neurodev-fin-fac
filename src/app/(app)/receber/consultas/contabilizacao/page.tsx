@@ -8,13 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-const mockEntries = [
-  { id: "1", date: "2026-05-02", doc: "REC-2025-001", description: "Mensalidade — João Silva / Eng. Civil", debit: "1.1.1 — Contas a Receber", credit: "4.1.1 — Receita de Mensalidades", value: 2800 },
-  { id: "2", date: "2026-05-02", doc: "REC-2025-002", description: "Mensalidade — Maria Oliveira / Medicina", debit: "1.1.1 — Contas a Receber", credit: "4.1.1 — Receita de Mensalidades", value: 4500 },
-  { id: "3", date: "2026-05-02", doc: "REC-BAIXA-001", description: "Baixa recebimento — João Silva", debit: "1.1.2 — Banco Itaú", credit: "1.1.1 — Contas a Receber", value: 2800 },
-  { id: "4", date: "2026-05-02", doc: "REC-BAIXA-002", description: "Baixa recebimento — Maria Oliveira", debit: "1.1.2 — Banco Itaú", credit: "1.1.1 — Contas a Receber", value: 4500 },
-  { id: "5", date: "2026-04-05", doc: "REC-2025-003", description: "Mensalidade — Pedro Santos / Direito", debit: "1.1.1 — Contas a Receber", credit: "4.1.1 — Receita de Mensalidades", value: 2200 },
-];
+const mockEntries: { id: string; date: string; doc: string; description: string; debit: string; credit: string; value: number }[] = [];
 
 export default function ContabilizacaoReceberPage() {
   const [dateFrom, setDateFrom] = useState("2026-05-01");

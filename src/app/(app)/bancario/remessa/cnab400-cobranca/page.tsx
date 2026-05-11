@@ -9,12 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockBoletos = [
-  { id: "1", number: "REC-2025-001", customer: "João Silva", dueDate: "2026-05-05", value: 2800, nossoNumero: "00001234" },
-  { id: "2", number: "REC-2025-002", customer: "Maria Oliveira", dueDate: "2026-05-05", value: 4500, nossoNumero: "00001235" },
-  { id: "3", number: "REC-2025-004", customer: "Ana Costa", dueDate: "2026-05-10", value: 1800, nossoNumero: "00001236" },
-  { id: "4", number: "REC-2025-005", customer: "Lucas Ferreira", dueDate: "2026-05-10", value: 3200, nossoNumero: "00001237" },
-];
+const mockBoletos: { id: string; number: string; customer: string; dueDate: string; value: number; nossoNumero: string }[] = [];
 
 function downloadArquivoCNAB400(linhas: number, filename: string) {
   const pad = (s: string) => s.padEnd(400, " ").substring(0, 400);

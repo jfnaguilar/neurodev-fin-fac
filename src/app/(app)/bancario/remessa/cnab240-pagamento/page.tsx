@@ -9,11 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockTitulos = [
-  { id: "1", number: "PAG-2025-010", supplier: "TechSupply Ltda", dueDate: "2026-05-10", value: 4800, type: "TED", docType: "DM" },
-  { id: "2", number: "PAG-2025-011", supplier: "Manutenção Pro", dueDate: "2026-05-10", value: 2300, type: "PIX", docType: "NF" },
-  { id: "3", number: "PAG-2025-012", supplier: "Serviços Gerais SA", dueDate: "2026-05-12", value: 6700, type: "DOC", docType: "NF" },
-];
+const mockTitulos: { id: string; number: string; supplier: string; dueDate: string; value: number; type: string; docType: string }[] = [];
 
 function downloadArquivoCNAB(linhas: number, largura: 240 | 400, filename: string) {
   const pad = (s: string) => s.padEnd(largura, " ").substring(0, largura);

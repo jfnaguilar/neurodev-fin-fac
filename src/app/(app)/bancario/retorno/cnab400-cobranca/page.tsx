@@ -8,12 +8,7 @@ import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockRetorno = [
-  { id: "1", number: "REC-2025-001", customer: "João Silva", value: 2800, status: "RECEIVED", ocorrencia: "06", message: "Liquidação normal" },
-  { id: "2", number: "REC-2025-002", customer: "Maria Oliveira", value: 4500, status: "RECEIVED", ocorrencia: "06", message: "Liquidação normal" },
-  { id: "3", number: "REC-2025-004", customer: "Ana Costa", value: 1800, status: "RECEIVED", ocorrencia: "17", message: "Liquidação após vencimento" },
-  { id: "4", number: "REC-2025-005", customer: "Lucas Ferreira", value: 3200, status: "REJECTED", ocorrencia: "02", message: "Entrada rejeitada: código do banco divergente" },
-];
+const mockRetorno: { id: string; number: string; customer: string; value: number; status: string; ocorrencia: string; message: string }[] = [];
 
 export default function RetornoCnab400CobPage() {
   const [file, setFile] = useState<File | null>(null);

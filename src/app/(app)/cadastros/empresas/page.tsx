@@ -23,10 +23,7 @@ type Empresa = {
   email: string; telefone: string; grupoEconomico: string; isActive: boolean;
 };
 
-const mockEmpresas: Empresa[] = [
-  { id: "1", razao: "NeuroDev Faculdade Ltda", fantasia: "NeuroDev Faculdade", cnpj: "12.345.678/0001-90", ie: "123.456.789.000", email: "financeiro@neurodev.edu.br", telefone: "(11) 3456-7890", grupoEconomico: "Grupo NeuroDev", isActive: true },
-  { id: "2", razao: "NeuroDev Instituto de Pesquisa Ltda", fantasia: "NeuroDev Instituto", cnpj: "98.765.432/0001-10", ie: "987.654.321.000", email: "instituto@neurodev.edu.br", telefone: "(11) 3456-7891", grupoEconomico: "Grupo NeuroDev", isActive: true },
-];
+const mockEmpresas: Empresa[] = [];
 
 const emptyForm = (): Omit<Empresa, "id"> => ({ razao: "", fantasia: "", cnpj: "", ie: "", email: "", telefone: "", grupoEconomico: "Grupo NeuroDev", isActive: true });
 

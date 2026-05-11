@@ -45,6 +45,7 @@ import {
   Receipt,
   Wifi,
   Plug,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -171,6 +172,7 @@ const navigation: NavItem[] = [
         label: "Consultas",
         children: [
           { label: "Títulos (por Cliente/Aluno)", href: "/receber/consultas/titulos", icon: List },
+          { label: "Cobranças Emitidas", href: "/receber/cobrancas", icon: Mail },
           { label: "Inadimplência", href: "/receber/consultas/inadimplencia", icon: AlertTriangle },
           { label: "Contabilização", href: "/receber/consultas/contabilizacao", icon: BookOpen },
           { label: "Relatórios", href: "/receber/consultas/relatorios", icon: BarChart3 },
@@ -243,7 +245,9 @@ const navigation: NavItem[] = [
       { label: "Usuários e Permissões", href: "/admin/usuarios", icon: Users },
       { label: "Alçadas de Aprovação", href: "/admin/alcadas", icon: ShieldCheck },
       { label: "Integrações (Boleto/NF-e)", href: "/admin/integracoes", icon: Plug },
-      { label: "Parâmetros do Sistema", href: "/admin/parametros", icon: Sliders },
+      { label: "Gennera (Acadêmico)", href: "/admin/integracoes/gennera", icon: GraduationCap },
+      { label: "Templates de E-mail",       href: "/admin/templates-email", icon: Mail },
+      { label: "Parâmetros do Sistema",     href: "/admin/parametros", icon: Sliders },
       { label: "Log de Auditoria", href: "/admin/auditoria", icon: ScrollText },
       { label: "LGPD/Privacidade", href: "/admin/lgpd", icon: Lock },
       { label: "Configurações Gerais", href: "/admin/configuracoes", icon: Settings },

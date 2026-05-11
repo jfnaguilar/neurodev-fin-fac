@@ -143,6 +143,83 @@ export async function cancelAsaasPayment(
   }
 }
 
+// ─── PIX ─────────────────────────────────────────────────────────────────────
+
+export interface AsaasPixParams {
+  apiKey: string;
+  isSandbox: boolean;
+  customerId: string;
+  amount: number;
+  dueDate: string;        // "YYYY-MM-DD" — PIX expires at end of this date
+  description: string;
+  externalRef?: string;
+}
+
+export interface AsaasPixResult {
+  externalId: string;     // Asaas payment ID
+  qrCode: string;         // PIX copia-e-cola (payload)
+  qrCodeImage: string;    // base64 PNG da QR code
+  txId: string;           // PIX txid (E2E ID)
+  expiresAt: Date;
+  status: string;
+}
+
+export async function createAsaasPix(params: AsaasPixParams): Promise<AsaasPixResult> {
+  const payRes = await asaasFetch(params.apiKey, params.isSandbox, "/payments", {
+    method: "POST",
+    body: JSON.stringify({
+      customer: params.customerId,
+      billingType: "PIX",
+      value: params.amount,
+      dueDate: params.dueDate,
+      description: params.description,
+      externalReference: params.externalRef,
+    }),
+  });
+
+  if (!payRes.ok) {
+    const err = await payRes.json();
+    throw new Error(`Asaas PIX error: ${JSON.stringify(err.errors)}`);
+  }
+  const payment = await payRes.json();
+
+  // Fetch QR code image and payload
+  const qrRes = await asaasFetch(
+    params.apiKey, params.isSandbox,
+    `/payments/${payment.id}/pixQrCode`
+  );
+  if (!qrRes.ok) {
+    throw new Error("Asaas PIX: falha ao obter QR code");
+  }
+  const qr = await qrRes.json();
+
+  return {
+    externalId: payment.id,
+    qrCode: qr.payload ?? "",
+    qrCodeImage: qr.encodedImage ?? "",
+    txId: qr.expirationDate ?? payment.id,
+    expiresAt: qr.expirationDate ? new Date(qr.expirationDate) : new Date(Date.now() + 86_400_000),
+    status: payment.status,
+  };
+}
+
+export async function getAsaasPixStatus(
+  apiKey: string,
+  isSandbox: boolean,
+  paymentId: string
+): Promise<{ status: string; paidAt?: Date }> {
+  // Same endpoint as boleto — Asaas unifies all payment types under /payments
+  return getAsaasPaymentStatus(apiKey, isSandbox, paymentId);
+}
+
+export async function cancelAsaasPix(
+  apiKey: string,
+  isSandbox: boolean,
+  paymentId: string
+): Promise<void> {
+  return cancelAsaasPayment(apiKey, isSandbox, paymentId);
+}
+
 // ─── NFSe (Nota Fiscal de Serviços) ──────────────────────────────────────────
 
 export interface AsaasNFSeParams {

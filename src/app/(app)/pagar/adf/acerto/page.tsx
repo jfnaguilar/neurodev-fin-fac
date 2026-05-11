@@ -9,17 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockADFs = [
-  { id: "1", number: "ADF-2025-001", supplier: "Fornecedor ABC Ltda", date: "2026-04-01", totalValue: 20000, usedValue: 0, balance: 20000 },
-  { id: "2", number: "ADF-2025-002", supplier: "Tech Solutions S.A.", date: "2026-03-15", totalValue: 8000, usedValue: 3000, balance: 5000 },
-];
+type ADF = { id: string; number: string; supplier: string; date: string; totalValue: number; usedValue: number; balance: number };
+const mockADFs: ADF[] = [];
 
-const mockInvoices = [
-  { id: "i1", number: "PAG-2025-030", supplier: "Fornecedor ABC Ltda", dueDate: "2026-05-05", value: 12000 },
-  { id: "i2", number: "PAG-2025-031", supplier: "Fornecedor ABC Ltda", dueDate: "2026-05-15", value: 8000 },
-];
-
-type ADF = typeof mockADFs[0];
+const mockInvoices: { id: string; number: string; supplier: string; dueDate: string; value: number }[] = [];
 
 export default function AcertoADFPage() {
   const [selectedADF, setSelectedADF] = useState<ADF | null>(null);

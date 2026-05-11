@@ -1,23 +1,28 @@
 "use client";
-import React, { useState } from "react";
-import { Search, CheckCircle2, DollarSign, Filter } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect, useCallback } from "react";
+import { Search, CheckCircle2, DollarSign, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
-const mockTitulos = [
-  { id: "1", number: "PAG-2025-001", supplier: "Fornecedor ABC Ltda", dueDate: "2026-05-05", value: 45000, parcela: "1/1", situation: "RELEASED" },
-  { id: "2", number: "PAG-2025-002", supplier: "Editora Saraiva S.A.", dueDate: "2026-05-01", value: 28500, parcela: "2/3", situation: "OVERDUE" },
-  { id: "3", number: "PAG-2025-003", supplier: "Manutenção Predial", dueDate: "2026-05-10", value: 18000, parcela: "1/1", situation: "RELEASED" },
-  { id: "4", number: "PAG-2025-004", supplier: "Software TI Sistemas", dueDate: "2026-05-15", value: 12000, parcela: "1/2", situation: "RELEASED" },
-  { id: "5", number: "PAG-2025-005", supplier: "Gráfica Impressos ME", dueDate: "2026-04-28", value: 8500, parcela: "3/3", situation: "OVERDUE" },
-];
+interface PaymentTitle {
+  id: string;
+  documentNumber: string | null;
+  dueDate: string;
+  originalValue: number;
+  currentBalance: number;
+  situation: string;
+  paymentMethod: string | null;
+  supplier: { id: string; name: string; document: string | null } | null;
+  installments: { number: number; dueDate: string; value: number; situation: string }[];
+}
 
 const paymentMethods = [
   { value: "PIX", label: "PIX" },
@@ -27,31 +32,91 @@ const paymentMethods = [
   { value: "BANK_SLIP", label: "Boleto" },
 ];
 
+const situationFilter: Record<string, string[]> = {
+  ALL: ["RELEASED", "OVERDUE"],
+  RELEASED: ["RELEASED"],
+  OVERDUE: ["OVERDUE"],
+};
+
 export default function PagamentoTitulosPage() {
-  const [titulos, setTitulos] = useState(mockTitulos);
+  const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const preselectedId = searchParams.get("id");
+
+  const [titulos, setTitulos] = useState<PaymentTitle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [search, setSearch] = useState("");
+  const [situacao, setSituacao] = useState("ALL");
   const [openConfirm, setOpenConfirm] = useState(false);
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
   const [paymentMethod, setPaymentMethod] = useState("PIX");
+  const [observation, setObservation] = useState("");
 
-  const filtered = titulos.filter((t) =>
-    t.number.toLowerCase().includes(search.toLowerCase()) ||
-    t.supplier.toLowerCase().includes(search.toLowerCase())
-  );
+  const tenantId = (session?.user as any)?.currentTenantId;
 
-  const toggleSelect = (id: string) => {
+  const fetchTitulos = useCallback(async () => {
+    if (!tenantId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/titulos/pagar?tenantId=${tenantId}&situation=ALL&limit=200`);
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      const payable = (json.data ?? []).filter((t: PaymentTitle) =>
+        ["RELEASED", "OVERDUE"].includes(t.situation)
+      );
+      setTitulos(payable);
+      if (preselectedId) {
+        const found = payable.find((t: PaymentTitle) => t.id === preselectedId);
+        if (found) setSelected([preselectedId]);
+      }
+    } catch {
+      toast({ title: "Erro ao carregar títulos", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [tenantId, preselectedId]);
+
+  useEffect(() => { fetchTitulos(); }, [fetchTitulos]);
+
+  const filtered = titulos.filter((t) => {
+    const matchesSit = situationFilter[situacao]?.includes(t.situation);
+    const matchesSearch =
+      (t.documentNumber ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (t.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase());
+    return matchesSit && matchesSearch;
+  });
+
+  const toggleSelect = (id: string) =>
     setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-  };
 
   const selectedItems = titulos.filter((t) => selected.includes(t.id));
-  const totalSelected = selectedItems.reduce((sum, t) => sum + t.value, 0);
+  const totalSelected = selectedItems.reduce((sum, t) => sum + Number(t.currentBalance), 0);
 
-  const handlePagar = () => {
-    setTitulos((prev) => prev.filter((t) => !selected.includes(t.id)));
-    setSelected([]);
-    setOpenConfirm(false);
-    toast({ title: "Pagamentos registrados com sucesso!", description: `${selectedItems.length} título(s) pagos.` });
+  const handlePagar = async () => {
+    if (!selectedItems.length) return;
+    setSaving(true);
+    try {
+      await Promise.all(
+        selectedItems.map((t) =>
+          fetch(`/api/titulos/pagar/${t.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ situation: "PAID", paymentDate, paymentMethod, observation }),
+          })
+        )
+      );
+      toast({ title: "Pagamentos registrados!", description: `${selectedItems.length} título(s) pago(s).` });
+      setSelected([]);
+      setObservation("");
+      setOpenConfirm(false);
+      fetchTitulos();
+    } catch {
+      toast({ title: "Erro ao registrar pagamento", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -82,7 +147,7 @@ export default function PagamentoTitulosPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input placeholder="Buscar título ou credor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
             </div>
-            <Select defaultValue="ALL">
+            <Select value={situacao} onValueChange={setSituacao}>
               <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Todos os títulos</SelectItem>
@@ -96,44 +161,60 @@ export default function PagamentoTitulosPage() {
 
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/30">
-              <tr>
-                <th className="py-3 px-4 w-10">
-                  <input type="checkbox" className="h-4 w-4 rounded border-input" checked={selected.length === filtered.length && filtered.length > 0}
-                    onChange={(e) => setSelected(e.target.checked ? filtered.map((t) => t.id) : [])} />
-                </th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Número</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Credor</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Parcela</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Vencimento</th>
-                <th className="py-3 px-4 text-right font-medium text-muted-foreground">Valor</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Situação</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filtered.map((t) => (
-                <tr key={t.id} className={`hover:bg-muted/20 transition-colors cursor-pointer ${selected.includes(t.id) ? "bg-primary/5" : ""}`} onClick={() => toggleSelect(t.id)}>
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" className="h-4 w-4 rounded border-input" checked={selected.includes(t.id)} onChange={() => toggleSelect(t.id)} />
-                  </td>
-                  <td className="py-3 px-4 font-mono text-xs">{t.number}</td>
-                  <td className="py-3 px-4 font-medium">{t.supplier}</td>
-                  <td className="py-3 px-4 text-center text-muted-foreground">{t.parcela}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={t.situation === "OVERDUE" ? "text-red-600 font-medium" : "text-muted-foreground"}>{formatDate(t.dueDate)}</span>
-                  </td>
-                  <td className="py-3 px-4 text-right font-semibold tabular-nums">{formatCurrency(t.value)}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${t.situation === "OVERDUE" ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"}`}>
-                      {t.situation === "OVERDUE" ? "Vencido" : "Liberado"}
-                    </span>
-                  </td>
+          {loading ? (
+            <div className="py-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="py-3 px-4 w-10">
+                    <input type="checkbox" className="h-4 w-4 rounded border-input"
+                      checked={selected.length === filtered.length && filtered.length > 0}
+                      onChange={(e) => setSelected(e.target.checked ? filtered.map((t) => t.id) : [])} />
+                  </th>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">Número</th>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">Credor</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Parcela</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Vencimento</th>
+                  <th className="py-3 px-4 text-right font-medium text-muted-foreground">Saldo</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Situação</th>
                 </tr>
-              ))}
-              {filtered.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">Nenhum título disponível para pagamento.</td></tr>}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y">
+                {filtered.map((t) => {
+                  const inst = t.installments[0];
+                  const parcela = inst ? `${inst.number}/${t.installments.length}` : "—";
+                  return (
+                    <tr key={t.id}
+                      className={`hover:bg-muted/20 transition-colors cursor-pointer ${selected.includes(t.id) ? "bg-primary/5" : ""}`}
+                      onClick={() => toggleSelect(t.id)}>
+                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" className="h-4 w-4 rounded border-input"
+                          checked={selected.includes(t.id)} onChange={() => toggleSelect(t.id)} />
+                      </td>
+                      <td className="py-3 px-4 font-mono text-xs">{t.documentNumber ?? t.id.slice(0, 8)}</td>
+                      <td className="py-3 px-4 font-medium">{t.supplier?.name ?? "—"}</td>
+                      <td className="py-3 px-4 text-center text-muted-foreground">{parcela}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={t.situation === "OVERDUE" ? "text-red-600 font-medium" : "text-muted-foreground"}>
+                          {formatDate(t.dueDate)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right font-semibold tabular-nums">{formatCurrency(Number(t.currentBalance))}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${t.situation === "OVERDUE" ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"}`}>
+                          {t.situation === "OVERDUE" ? "Vencido" : "Liberado"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">Nenhum título disponível para pagamento.</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </CardContent>
       </Card>
 
@@ -159,12 +240,15 @@ export default function PagamentoTitulosPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Observação</Label>
-              <Input placeholder="Observação sobre o pagamento (opcional)..." />
+              <Input placeholder="Observação sobre o pagamento (opcional)..." value={observation} onChange={(e) => setObservation(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenConfirm(false)}>Cancelar</Button>
-            <Button onClick={handlePagar}><CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />Confirmar Pagamento</Button>
+            <Button variant="outline" onClick={() => setOpenConfirm(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={handlePagar} disabled={saving}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
+              Confirmar Pagamento
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

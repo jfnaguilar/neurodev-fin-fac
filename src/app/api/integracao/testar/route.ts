@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/encryption";
 import { testAsaasConnection } from "@/lib/providers/asaas";
 import { testFocusNFeConnection } from "@/lib/providers/focusnfe";
+import { testPagSeguroConnection } from "@/lib/providers/pagseguro";
+import { testAbacateConnection } from "@/lib/providers/abacate";
+import { testResendConnection } from "@/lib/providers/resend";
+import { testSmtpConnection, parseSmtpSettings } from "@/lib/providers/smtp";
+import { testGenneraConnection } from "@/lib/providers/gennera";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -35,6 +40,23 @@ export async function POST(req: Request) {
       });
       ok = res.ok;
       message = ok ? "Conexão Stripe estabelecida com sucesso" : "API key Stripe inválida";
+    } else if (provider === "PAGSEGURO") {
+      ok = await testPagSeguroConnection(apiKey, cfg.isSandbox);
+      message = ok ? "Conexão PagSeguro estabelecida com sucesso" : "Falha na conexão com PagSeguro";
+    } else if (provider === "ABACATE") {
+      ok = await testAbacateConnection(apiKey);
+      message = ok ? "Conexão Abacate Pay estabelecida com sucesso" : "Falha na conexão com Abacate Pay";
+    } else if (provider === "RESEND") {
+      ok = await testResendConnection(apiKey);
+      message = ok ? "Conexão Resend estabelecida com sucesso" : "API key Resend inválida";
+    } else if (provider === "SMTP") {
+      const settings = (cfg.settings ?? {}) as Record<string, string>;
+      ok = await testSmtpConnection(parseSmtpSettings(settings, apiKey));
+      message = ok ? "Conexão SMTP estabelecida com sucesso" : "Falha na conexão SMTP — verifique host, porta e credenciais";
+    } else if (provider === "GENNERA") {
+      const settings = (cfg.settings ?? {}) as Record<string, string>;
+      ok = await testGenneraConnection(settings, apiKey);
+      message = ok ? "Conexão Gennera estabelecida com sucesso" : "Falha na autenticação com Gennera — verifique idInstituição, usuário e senha";
     } else {
       return NextResponse.json({ ok: false, message: "Provider inválido" }, { status: 400 });
     }

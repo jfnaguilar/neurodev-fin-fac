@@ -8,11 +8,7 @@ import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockRetorno = [
-  { id: "1", number: "REC-2025-001", customer: "João Silva", value: 2800, status: "RECEIVED", message: "Crédito confirmado" },
-  { id: "2", number: "REC-2025-002", customer: "Maria Oliveira", value: 4500, status: "RECEIVED", message: "Crédito confirmado" },
-  { id: "3", number: "REC-2025-005", customer: "Lucas Ferreira", value: 3200, status: "REJECTED", message: "Boleto cancelado pelo pagador" },
-];
+const mockRetorno: { id: string; number: string; customer: string; value: number; status: string; message: string }[] = [];
 
 export default function RetornoRemessaReceberPage() {
   const [file, setFile] = useState<File | null>(null);

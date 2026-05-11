@@ -1,39 +1,69 @@
 "use client";
-import React, { useState } from "react";
-import { Search, Download, Eye, Filter } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Search, Download, Eye, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate, getTitleSituationLabel, getTitleSituationColor } from "@/lib/utils";
+import { useSession } from "next-auth/react";
+import { toast } from "@/hooks/use-toast";
 
-const mockTitulos = [
-  { id: "1", number: "PAG-2025-001", supplier: "Fornecedor ABC Ltda", group: "Serviços", dueDate: "2026-05-05", value: 45000, situation: "RELEASED" },
-  { id: "2", number: "PAG-2025-002", supplier: "Editora Saraiva S.A.", group: "Material", dueDate: "2026-05-01", value: 28500, situation: "OVERDUE" },
-  { id: "3", number: "PAG-2025-003", supplier: "Manutenção Predial", group: "Serviços", dueDate: "2026-05-10", value: 18000, situation: "RELEASED" },
-  { id: "4", number: "PAG-2025-010", supplier: "Tech Solutions S.A.", group: "Tecnologia", dueDate: "2026-04-30", value: 12000, situation: "PAID" },
-  { id: "5", number: "PAG-2025-011", supplier: "Gráfica Impressos ME", group: "Serviços", dueDate: "2026-04-28", value: 8500, situation: "PAID" },
-  { id: "6", number: "PAG-2025-020", supplier: "Fornecedor ABC Ltda", group: "Serviços", dueDate: "2026-06-10", value: 5000, situation: "PENDING_APPROVAL" },
-];
+interface PaymentTitle {
+  id: string;
+  documentNumber: string | null;
+  dueDate: string;
+  originalValue: number;
+  currentBalance: number;
+  situation: string;
+  supplier: { name: string } | null;
+}
 
 export default function ConsultaTitulosPagarPage() {
+  const { data: session } = useSession();
+  const [titulos, setTitulos] = useState<PaymentTitle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [situation, setSituation] = useState("ALL");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const filtered = mockTitulos.filter((t) => {
-    const matchSearch = t.supplier.toLowerCase().includes(search.toLowerCase()) || t.number.toLowerCase().includes(search.toLowerCase());
-    const matchSit = situation === "ALL" || t.situation === situation;
-    return matchSearch && matchSit;
+  const tenantId = (session?.user as any)?.currentTenantId;
+
+  const fetchTitulos = useCallback(async () => {
+    if (!tenantId) return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ tenantId, limit: "500" });
+      if (situation !== "ALL") params.set("situation", situation);
+      const res = await fetch(`/api/titulos/pagar?${params}`);
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      setTitulos(json.data ?? []);
+    } catch {
+      toast({ title: "Erro ao carregar títulos", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [tenantId, situation]);
+
+  useEffect(() => { fetchTitulos(); }, [fetchTitulos]);
+
+  const filtered = titulos.filter((t) => {
+    const matchSearch =
+      (t.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (t.documentNumber ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchDate =
+      (!dateFrom || new Date(t.dueDate) >= new Date(dateFrom)) &&
+      (!dateTo || new Date(t.dueDate) <= new Date(dateTo));
+    return matchSearch && matchDate;
   });
 
   const totals = {
     count: filtered.length,
-    total: filtered.reduce((s, t) => s + t.value, 0),
-    paid: filtered.filter((t) => t.situation === "PAID").reduce((s, t) => s + t.value, 0),
-    open: filtered.filter((t) => t.situation !== "PAID" && t.situation !== "CANCELED").reduce((s, t) => s + t.value, 0),
+    total: filtered.reduce((s, t) => s + Number(t.originalValue), 0),
+    paid: filtered.filter((t) => t.situation === "PAID").reduce((s, t) => s + Number(t.originalValue), 0),
+    open: filtered.filter((t) => !["PAID", "CANCELED"].includes(t.situation)).reduce((s, t) => s + Number(t.currentBalance), 0),
   };
 
   return (
@@ -49,9 +79,9 @@ export default function ConsultaTitulosPagarPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: "Registros", value: totals.count, unit: "títulos" },
-          { label: "Total", value: formatCurrency(totals.total), unit: "" },
+          { label: "Total Original", value: formatCurrency(totals.total), unit: "" },
           { label: "Pagos", value: formatCurrency(totals.paid), unit: "" },
-          { label: "Em Aberto", value: formatCurrency(totals.open), unit: "" },
+          { label: "Saldo em Aberto", value: formatCurrency(totals.open), unit: "" },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="pt-4 pb-4">
@@ -81,44 +111,53 @@ export default function ConsultaTitulosPagarPage() {
                 <SelectItem value="CANCELED">Cancelado</SelectItem>
               </SelectContent>
             </Select>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" placeholder="De" />
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" placeholder="Até" />
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/30">
-              <tr>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Número</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Credor</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Grupo</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Vencimento</th>
-                <th className="py-3 px-4 text-right font-medium text-muted-foreground">Valor</th>
-                <th className="py-3 px-4 text-center font-medium text-muted-foreground">Situação</th>
-                <th className="py-3 px-4 w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filtered.map((t) => (
-                <tr key={t.id} className="hover:bg-muted/20 transition-colors">
-                  <td className="py-3 px-4 font-mono text-xs">{t.number}</td>
-                  <td className="py-3 px-4 font-medium">{t.supplier}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{t.group}</td>
-                  <td className="py-3 px-4 text-center text-muted-foreground">{formatDate(t.dueDate)}</td>
-                  <td className="py-3 px-4 text-right font-semibold tabular-nums">{formatCurrency(t.value)}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTitleSituationColor(t.situation)}`}>{getTitleSituationLabel(t.situation)}</span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5" /></Button>
-                  </td>
+          {loading ? (
+            <div className="py-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">Número</th>
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">Credor</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Vencimento</th>
+                  <th className="py-3 px-4 text-right font-medium text-muted-foreground">Valor Original</th>
+                  <th className="py-3 px-4 text-right font-medium text-muted-foreground">Saldo</th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground">Situação</th>
+                  <th className="py-3 px-4 w-10"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y">
+                {filtered.map((t) => (
+                  <tr key={t.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-3 px-4 font-mono text-xs">{t.documentNumber ?? t.id.slice(0, 8)}</td>
+                    <td className="py-3 px-4 font-medium">{t.supplier?.name ?? "—"}</td>
+                    <td className="py-3 px-4 text-center text-muted-foreground">{formatDate(t.dueDate)}</td>
+                    <td className="py-3 px-4 text-right tabular-nums">{formatCurrency(Number(t.originalValue))}</td>
+                    <td className="py-3 px-4 text-right font-semibold tabular-nums">{formatCurrency(Number(t.currentBalance))}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTitleSituationColor(t.situation)}`}>
+                        {getTitleSituationLabel(t.situation)}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5" /></Button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">Nenhum título encontrado.</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </CardContent>
       </Card>
     </div>

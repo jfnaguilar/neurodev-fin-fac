@@ -8,11 +8,7 @@ import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockRetorno = [
-  { id: "1", number: "PAG-2025-010", supplier: "TechSupply Ltda", value: 4800, status: "CONFIRMED", message: "Pagamento confirmado pelo banco" },
-  { id: "2", number: "PAG-2025-011", supplier: "Manutenção Pro", value: 2300, status: "CONFIRMED", message: "Pagamento confirmado pelo banco" },
-  { id: "3", number: "PAG-2025-012", supplier: "Serviços Gerais SA", value: 6700, status: "REJECTED", message: "Agência/conta do favorecido inválida" },
-];
+const mockRetorno: { id: string; number: string; supplier: string; value: number; status: string; message: string }[] = [];
 
 export default function RetornoCnab240PgtoPage() {
   const [file, setFile] = useState<File | null>(null);

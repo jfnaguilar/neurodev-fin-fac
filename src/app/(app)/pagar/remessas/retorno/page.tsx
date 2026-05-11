@@ -9,11 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-const mockRetorno = [
-  { id: "1", number: "PAG-2025-001", supplier: "Fornecedor ABC Ltda", value: 45000, status: "PAID", message: "Pagamento confirmado" },
-  { id: "2", number: "PAG-2025-003", supplier: "Manutenção Predial", value: 18000, status: "PAID", message: "Pagamento confirmado" },
-  { id: "3", number: "PAG-2025-007", supplier: "Gráfica Impressos", value: 4200, status: "REJECTED", message: "Dados bancários inválidos" },
-];
+const mockRetorno: { id: string; number: string; supplier: string; value: number; status: string; message: string }[] = [];
 
 export default function RetornoRemessaPagarPage() {
   const [file, setFile] = useState<File | null>(null);
